@@ -126,7 +126,13 @@ export class AppComponent implements OnInit {
   addExtraWorkItem(): void {
     this.extraWorkItems.push({ description: '', amount: 0, remarks: '' });
   }
-  extraWorkItems: Array<{ description: string; amount?: number; remarks?: string }> = [];
+  extraWorkItems: Array<{ description: string; amount?: number; remarks?: string }> = [
+    { description: 'Inside Taza (plaster finishing)' },
+    { description: 'Underground Sump / Water Tank' },
+    { description: 'Boundary Wall & Main Gate' },
+    { description: 'External Flooring' },
+    { description: 'Septic Tank / Soak Pit' }
+  ];
   isBoreWellRequired: boolean = false;
 
   toggleBoreWellCosting() {

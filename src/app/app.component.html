@@ -1,40 +1,39 @@
 <div class="quote-container">
-  <div class="quote-beautiful" style="display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
-    <!-- Date at top right -->
-    <div style="position:absolute;top:0;right:0;font-size:15px;color:#1976d2;font-weight:500;">{{currentDate}}</div>
-    <!-- Logo at top center -->
-    <div *ngIf="logoUrl" style="margin:16px 0;display:flex;flex-direction:column;align-items:center;">
-      <img [src]="logoUrl" alt="Logo" style="max-height:80px;max-width:220px;object-fit:contain;border-radius:8px;box-shadow:0 2px 8px #ccc;" />
-      <button *ngIf="logoUrl" type="button" (click)="logoInput.click()" style="background:none;border:none;color:#1976d2;text-decoration:underline;cursor:pointer;font-size:14px;margin-top:8px;">Edit Logo</button>
-    </div>
-    <button *ngIf="!logoUrl" type="button" (click)="logoInput.click()" style="background:#1976d2;color:#fff;border:none;border-radius:4px;padding:6px 18px;cursor:pointer;margin-bottom:8px;">Add Logo</button>
-    <!-- Centered Heading -->
-    <h1 style="margin:0;text-align:center;color:#1976d2;font-size:2.2em;font-weight:700;letter-spacing:1px;">{{companyName ? companyName + ' Quotation' : 'Quotation'}}</h1>
-    <!-- Expand/Collapse All -->
-    <div style="margin-top:8px;display:flex;align-items:center;justify-content:center;">
-      <a *ngIf="!showCompanyInfo || !showClientInfo || !showPillingInfo || !showPlinthInfo"
-         href="#"
-         (click)="$event.preventDefault(); expandAll()"
-         style="margin-right:16px;">Expand All</a>
-      <a *ngIf="showCompanyInfo && showClientInfo && showPillingInfo && showPlinthInfo"
-         href="#"
-         (click)="$event.preventDefault(); collapseAll()">Collapse All</a>
-    </div>
-    <input type="file" #logoInput accept="image/*" style="display:none;" (change)="onLogoSelected($event)" />
-    <!-- Quotation Summary Display -->
-    <div *ngIf="showQuotationSummary" style="margin:32px auto;max-width:900px;padding:32px 24px;background:#f7f7f7;border-radius:12px;box-shadow:0 2px 12px #ccc;">
-      <h2 style="color:#1976d2;margin-bottom:24px;">Quotation Summary</h2>
+  <div class="quote-beautiful" style="display:flex;align-items:center;justify-content:space-between;">
+  <h1 style="margin:0;">{{companyName ? companyName + ' Quotation' : 'Quotation'}}</h1>
+    <div style="display:flex;align-items:center;">
+  <input type="file" #logoInput accept="image/*" style="display:none;" (change)="onLogoSelected($event)" />
+      <div style="width:2px;height:32px;background:#ccc;margin:0 20px;"></div>
       <div>
-        <!-- Display all relevant info here, e.g. company, client, totals, etc. -->
-        <p><strong>Company Name:</strong> {{companyName}}</p>
-        <p><strong>Client Name:</strong> {{clientPrefix}} {{clientName}}</p>
-        <p><strong>Location:</strong> {{clientLocation}}</p>
-        <p><strong>Total Project Cost:</strong> <span style="color:#388e3c;font-size:22px;font-weight:bold;">{{calculateTotalProjectCost() | number:'1.0-0'}}</span></p>
-        <!-- Add more details as needed -->
+        <a *ngIf="!showCompanyInfo || !showClientInfo || !showPillingInfo || !showPlinthInfo"
+           href="#"
+           (click)="$event.preventDefault(); expandAll()"
+           style="margin-right:16px;">Expand All</a>
+        <a *ngIf="showCompanyInfo && showClientInfo && showPillingInfo && showPlinthInfo"
+           href="#"
+           (click)="$event.preventDefault(); collapseAll()">Collapse All</a>
       </div>
     </div>
+  <!-- Display uploaded logo if available -->
+  <div *ngIf="logoUrl" style="margin:16px 0;display:flex;flex-direction:column;align-items:center;">
+    <img [src]="logoUrl" alt="Logo" style="max-height:80px;max-width:220px;object-fit:contain;border-radius:8px;box-shadow:0 2px 8px #ccc;" />
+    <button *ngIf="logoUrl" type="button" (click)="logoInput.click()" style="background:none;border:none;color:#1976d2;text-decoration:underline;cursor:pointer;font-size:14px;margin-top:8px;">Edit Logo</button>
   </div>
+  <button *ngIf="!logoUrl" type="button" (click)="logoInput.click()" style="background:#1976d2;color:#fff;border:none;border-radius:4px;padding:6px 18px;cursor:pointer;margin-right:16px;">Add Logo</button>
+  <!-- Generate Quotation Button -->
 
+  <!-- Quotation Summary Display -->
+  <div *ngIf="showQuotationSummary" style="margin:32px auto;max-width:900px;padding:32px 24px;background:#f7f7f7;border-radius:12px;box-shadow:0 2px 12px #ccc;">
+    <h2 style="color:#1976d2;margin-bottom:24px;">Quotation Summary</h2>
+    <div>
+      <!-- Display all relevant info here, e.g. company, client, totals, etc. -->
+      <p><strong>Company Name:</strong> {{companyName}}</p>
+      <p><strong>Client Name:</strong> {{clientPrefix}} {{clientName}}</p>
+      <p><strong>Location:</strong> {{clientLocation}}</p>
+      <p><strong>Total Project Cost:</strong> <span style="color:#388e3c;font-size:22px;font-weight:bold;">{{calculateTotalProjectCost() | number:'1.0-0'}}</span></p>
+      <!-- Add more details as needed -->
+    </div>
+  </div>
   </div>
 
   <hr style="border:0;border-top:2px solid #ccc;margin:24px 0;" />
@@ -456,6 +455,7 @@
     </div>
 </div>
 <!-- Floating Generate Quotation Button (always visible, after all sections) -->
+</div>
 <div class="generate-quote-bottom" *ngIf="!showQuotationSummary" role="region" aria-label="Generate quotation">
   <button type="button" class="generate-btn" (click)="generateQuotation()">
     <span style="display:inline-block;vertical-align:middle;font-weight:600;">Generate Quotation</span>
