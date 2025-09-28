@@ -1,0 +1,173 @@
+/* Bottom-centered Generate Quotation button */
+.generate-quote-bottom {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 12px 0 0 0;
+}
+
+.generate-quote-bottom .generate-btn {
+  background: #388e3c;
+  color: #fff;
+  font-size: 16px;
+  padding: 14px 32px;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(24, 128, 48, 0.18);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.generate-quote-bottom .generate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(24, 128, 48, 0.22);
+}
+
+.generate-quote-bottom .generate-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 480px) {
+  .generate-quote-bottom .generate-btn {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+}
+/* Container */
+.quote-container {
+  max-width: 920px;
+  margin: 22px auto;
+  padding: 8px;
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+  color: #222;
+}
+
+/* Header */
+.quote-beautiful h1 {
+  text-align: center;
+  font-size: 26px;
+  margin: 8px 0 18px;
+  color: #0b57a4; /* brand blue */
+  letter-spacing: 0.2px;
+}
+
+/* Section card */
+.company-section {
+  background: #ffffff;
+  border: 1px solid #e6e9ee;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  box-shadow: 0 6px 14px rgba(13, 24, 38, 0.03);
+  overflow: hidden;
+}
+
+/* Toggle button (header of section) */
+.company-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border: none;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  color: #1b1f23;
+}
+
+/* Arrow */
+.arrow {
+  font-size: 18px;
+  transition: transform 0.22s ease;
+  color: #6b7280;
+}
+.arrow.open {
+  transform: rotate(180deg);
+}
+
+/* Details area */
+.company-details {
+  padding: 14px 16px 18px 16px;
+  border-top: 1px solid #f3f5f7;
+}
+
+/* Grid rows */
+.company-info-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* For inline prefix + name layout */
+.company-info-row.inline {
+  grid-template-columns: 80px 120px 1fr;
+}
+
+/* Labels and inputs */
+.company-info-row label {
+  font-size: 14px;
+  color: #374151;
+  padding-right: 6px;
+}
+
+.company-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d6d9df;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+.company-input:focus {
+  border-color: #0b57a4;
+  box-shadow: 0 6px 18px rgba(11, 87, 164, 0.06);
+}
+
+/* Select sizing */
+.select-input {
+  height: 38px;
+  padding: 6px 8px;
+}
+
+/* Section action row */
+.section-actions {
+  margin-top: 8px;
+  text-align: center;
+}
+.company-reset-btn {
+  background: #f3f4f6;
+  border: 1px solid #e6e9ee;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.company-reset-btn:hover {
+  background: #e9eef8;
+  border-color: #d0def6;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+  .company-info-row,
+  .company-info-row.inline {
+    grid-template-columns: 1fr;
+  }
+  .company-info-row.inline .select-input {
+    width: 120px;
+  }
+  .company-toggle {
+    padding: 12px;
+  }
+  .quote-beautiful h1 {
+    font-size: 20px;
+  }
+}
