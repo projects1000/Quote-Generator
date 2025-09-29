@@ -171,3 +171,38 @@
     font-size: 20px;
   }
 }
+
+/* Super Structure responsive helpers */
+.grid-3-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.inline-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .grid-3-cols {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  /* Make inputs expand on small screens, overriding fixed inline widths */
+  .grid-3-cols .company-input {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .inline-controls {
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .inline-controls > * {
+    /* Let children take full width when wrapping */
+    max-width: 100%;
+  }
+}

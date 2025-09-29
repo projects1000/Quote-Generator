@@ -509,10 +509,10 @@ export class AppComponent implements OnInit {
         showInfo: true,
         brandedMaterial: 'Wall finish (Asian/Birla Putty), Premium Paint (Asian Paint + Weather Coat). Electrical: Finolex/Anchor/Havells. Flooring: Somany Tiles (4x2). Staircase: Marble. Inside doors: 30mm Ply waterproof. Main Door: Teak. Kitchen chimney: Branded. Chowkath: WPC (5”x2.5”). Windows: PVC with mosquito cover & glass. Plumbing: Oriplast/Supreme, Jaguar. Grills: GI. Balcony: SS. Kitchen slab: Granite',
         nonBrandedMaterial: 'Cement Chowkath, Color Putty (2 coats), Primer (1 coat), Paint (2 coats). Electrical: Finolex wire, module switch. Tiles (Non branded). Windows: Aluminium. Doors: Flush door 300mm laminated both sides. Tiles: Local 2x2. Plumbing: Supreme/Oriplast. Bathroom fittings: Parryware. MS Grill',
-        baseSqft: 1500,
+        baseSqft: this.plinthBaseSqft || 0,
         coreHouseSqft: 0,
         coreHouseSqftPrice: 980,
-        finishingSqft: 1500,
+        finishingSqft: this.plinthBaseSqft || 0,
         finishingPriceType: 'branded',
         finishingPrice: 1650,
         superStructureSqftPrice: 0
@@ -560,10 +560,10 @@ export class AppComponent implements OnInit {
         showInfo: true,
         brandedMaterial: 'Wall finish (Asian/Birla Putty), Premium Paint (Asian Paint + Weather Coat). Electrical: Finolex/Anchor/Havells. Flooring: Somany Tiles (4x2). Staircase: Marble. Inside doors: 30mm Ply waterproof. Main Door: Teak. Kitchen chimney: Branded. Chowkath: WPC (5”x2.5”). Windows: PVC with mosquito cover & glass. Plumbing: Oriplast/Supreme, Jaguar. Grills: GI. Balcony: SS. Kitchen slab: Granite',
         nonBrandedMaterial: 'Cement Chowkath, Color Putty (2 coats), Primer (1 coat), Paint (2 coats). Electrical: Finolex wire, module switch. Tiles (Non branded). Windows: Aluminium. Doors: Flush door 300mm laminated both sides. Tiles: Local 2x2. Plumbing: Supreme/Oriplast. Bathroom fittings: Parryware. MS Grill',
-        baseSqft: 1500,
+        baseSqft: this.plinthBaseSqft || 0,
         coreHouseSqft: 0,
         coreHouseSqftPrice: 980,
-        finishingSqft: 1500,
+        finishingSqft: this.plinthBaseSqft || 0,
         finishingPriceType: 'branded',
         finishingPrice: 1650,
         superStructureSqftPrice: 0
@@ -691,6 +691,23 @@ export class AppComponent implements OnInit {
     this.plinthSqftPrice = 650;
     this.plinthInfoSaved = false;
     this.showPlinthInfoSaved = false;
+  }
+  // When Plinth base changes, reflect it to Super Structure (Ground) and all Floors
+  onPlinthBaseSqftChange(value: number) {
+    const newBase = Math.max(0, Number(value) || 0);
+    this.plinthBaseSqft = newBase;
+    // Update Ground (Super Structure)
+    this.superStructureBaseSqft = newBase;
+    const base = this.superStructureBaseSqft || 0;
+    this.coreHouseSqft = Math.max(0, Math.min(Number(this.coreHouseSqft) || 0, base));
+    this.finishingSqft = Math.max(0, base - this.coreHouseSqft);
+    // Update all floors
+    (this.floors || []).forEach(f => {
+      f.baseSqft = newBase;
+      const fb = f.baseSqft || 0;
+      f.coreHouseSqft = Math.max(0, Math.min(Number(f.coreHouseSqft) || 0, fb));
+      f.finishingSqft = Math.max(0, fb - (Number(f.coreHouseSqft) || 0));
+    });
   }
   savePlinthInfo() {
     const payload = {
