@@ -61,8 +61,17 @@
         <input id="companyMobile" type="tel" class="company-input" [(ngModel)]="companyMobile" />
       </div>
 
-      <div class="section-actions">
+      <div class="section-actions" style="display:flex;align-items:center;gap:8px;">
         <button class="company-reset-btn" type="button" (click)="resetCompanyInfo()">Reset</button>
+        <button class="company-reset-btn"
+    type="button"
+    (click)="saveCompanyInfo()"
+    [disabled]="companyInfoSaved"
+    [ngStyle]="{ 'margin-left.px': 8, 'background': '#1976d2', 'color': '#fff', 'opacity': companyInfoSaved ? 0.6 : 1 }">
+          SAVE DEFALUT INFO
+  </button>
+        <button class="company-reset-btn" type="button" (click)="clearSavedCompanyInfo()" style="margin-left:8px;">Clear Saved</button>
+        <span *ngIf="showCompanyInfoSaved" style="color:#388e3c;font-weight:600;margin-left:8px;">Saved</span>
       </div>
     </div>
   </div>
@@ -153,8 +162,11 @@
         </div>
       </div>
 
-      <div class="section-actions">
+      <div class="section-actions" style="display:flex;align-items:center;gap:8px;">
         <button class="company-reset-btn" type="button" (click)="resetPillingInfo()" [disabled]="!isPillingRequired">Reset</button>
+  <button class="company-reset-btn" type="button" (click)="savePillingInfo()" [disabled]="!isPillingRequired || pillingInfoSaved">SAVE DEFALUT INFO</button>
+        <button class="company-reset-btn" type="button" (click)="clearSavedPillingInfo()" [disabled]="!isPillingRequired">Clear Saved</button>
+        <span *ngIf="showPillingInfoSaved" style="color:#388e3c;font-weight:600;">Saved</span>
       </div>
     </div>
   </div>
@@ -185,8 +197,11 @@
   <input id="plinthTotalCost" type="text" class="company-input" [value]="plinthBaseSqft * plinthSqftPrice" readonly style="width:30%;max-width:180px;font-weight:bold;" />
         </div>
 
-      <div class="section-actions">
+      <div class="section-actions" style="display:flex;align-items:center;gap:8px;">
         <button class="company-reset-btn" type="button" (click)="resetPlinthInfo()">Reset</button>
+  <button class="company-reset-btn" type="button" (click)="savePlinthInfo()" [disabled]="plinthInfoSaved">SAVE DEFALUT INFO</button>
+        <button class="company-reset-btn" type="button" (click)="clearSavedPlinthInfo()">Clear Saved</button>
+        <span *ngIf="showPlinthInfoSaved" style="color:#388e3c;font-weight:600;">Saved</span>
       </div>
     </div>
   </div>
@@ -272,8 +287,11 @@
   <label for="superStructureTotalCost" style="font-weight:bold;">Total Cost</label>
   <input id="superStructureTotalCost" type="text" class="company-input" [value]="(coreHouseSqft * coreHouseSqftPrice) + (finishingSqft * finishingPrice)" readonly style="width:30%;max-width:180px;font-weight:bold;" />
     </div>
-    <div class="section-actions">
+    <div class="section-actions" style="display:flex;align-items:center;gap:8px;">
       <button class="company-reset-btn" type="button" (click)="resetSuperStructureInfo()">Reset</button>
+      <button class="company-reset-btn" type="button" (click)="saveSuperStructure()" [disabled]="superStructureSaved">Save</button>
+      <button class="company-reset-btn" type="button" (click)="clearSavedSuperStructure()">Clear Saved</button>
+      <span *ngIf="showSuperStructureSaved" style="color:#388e3c;font-weight:600;">Saved</span>
     </div>
     <!-- Dynamic Floors Container -->
     <div *ngFor="let floor of floors; let i = index" class="company-section" style="margin-top:32px;">
@@ -447,8 +465,11 @@
           <span>%</span>
         </span>
       </div>
-      <div class="section-actions" style="margin-top:24px;">
+      <div class="section-actions" style="margin-top:24px;display:flex;align-items:center;gap:8px;">
         <button class="company-reset-btn" type="button" (click)="resetPaymentStructure()">Reset</button>
+  <button class="company-reset-btn" type="button" (click)="savePaymentStructure()" [disabled]="paymentStructureSaved">SAVE DEFALUT INFO</button>
+        <button class="company-reset-btn" type="button" (click)="clearSavedPaymentStructure()">Clear Saved</button>
+        <span *ngIf="showPaymentStructureSaved" style="color:#388e3c;font-weight:600;">Saved</span>
       </div>
     </div>
   </div>
@@ -460,15 +481,18 @@
       </button>
       <div class="company-details" *ngIf="showExtraWork">
         <div *ngFor="let item of extraWorkItems; let i = index" class="company-info-row" style="display:flex;align-items:center;gap:12px;">
-          <input type="text" class="company-input" [(ngModel)]="item.description" placeholder="Extra Work Item" />
+          <input type="text" class="company-input" [(ngModel)]="item.description" (ngModelChange)="onExtraWorkChanged()" placeholder="Extra Work Item" />
           <button type="button" (click)="deleteExtraWorkItem(i)" style="background:#e53935;color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;">Delete</button>
         </div>
         <div style="display:flex;justify-content:center;margin:16px 0;">
           <button type="button" (click)="addExtraWorkItem()" style="font-size:20px;padding:6px 18px;border-radius:50%;background:#1976d2;color:#fff;border:none;box-shadow:0 2px 8px #ccc;cursor:pointer;">+</button>
           <span style="margin-left:10px;font-size:16px;color:#1976d2;vertical-align:middle;">Add Item</span>
         </div>
-        <div class="section-actions" style="margin-top:24px;">
+        <div class="section-actions" style="margin-top:24px;display:flex;align-items:center;gap:8px;">
           <button class="company-reset-btn" type="button" (click)="resetExtraWork()">Reset</button>
+          <button class="company-reset-btn" type="button" (click)="saveExtraWork()" [disabled]="extraWorkSaved">SAVE DEFALUT INFO</button>
+          <button class="company-reset-btn" type="button" (click)="clearSavedExtraWork()">Clear Saved</button>
+          <span *ngIf="showExtraWorkSaved" style="color:#388e3c;font-weight:600;">Saved</span>
         </div>
       </div>
     </div>
