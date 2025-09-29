@@ -20,6 +20,74 @@ export class AppComponent implements OnInit {
     if (savedLogo) {
       this.logoUrl = savedLogo;
     }
+    // Load saved company info from localStorage if available
+    try {
+      const savedCompanyInfo = localStorage.getItem('companyInfo');
+      if (savedCompanyInfo) {
+        const parsed = JSON.parse(savedCompanyInfo);
+        this.companyName = parsed.companyName || '';
+        this.companyAddress = parsed.companyAddress || '';
+        this.companyMobile = parsed.companyMobile || '';
+        // Mark saved so Save button starts disabled
+        this.companyInfoSaved = true;
+      }
+      const savedSS = localStorage.getItem('superStructureInfo');
+      if (savedSS) {
+        const ss = JSON.parse(savedSS);
+        this.superStructureMaterial = ss.superStructureMaterial || this.superStructureMaterial;
+        this.superStructureMaterial2 = ss.superStructureMaterial2 || this.superStructureMaterial2;
+        this.superStructureBaseSqft = typeof ss.superStructureBaseSqft === 'number' ? ss.superStructureBaseSqft : this.superStructureBaseSqft;
+        this.coreHouseSqft = typeof ss.coreHouseSqft === 'number' ? ss.coreHouseSqft : this.coreHouseSqft;
+        this.coreHouseSqftPrice = typeof ss.coreHouseSqftPrice === 'number' ? ss.coreHouseSqftPrice : this.coreHouseSqftPrice;
+        this.finishingSqft = typeof ss.finishingSqft === 'number' ? ss.finishingSqft : this.finishingSqft;
+        this.finishingPriceType = ss.finishingPriceType || this.finishingPriceType;
+        this.finishingPrice = typeof ss.finishingPrice === 'number' ? ss.finishingPrice : this.finishingPrice;
+        this.superStructureSaved = true;
+      }
+        const savedPilling = localStorage.getItem('pillingInfo');
+        if (savedPilling) {
+          const p = JSON.parse(savedPilling);
+          this.isPillingRequired = !!p.isPillingRequired;
+          this.pillingMaterial = p.pillingMaterial || this.pillingMaterial;
+          this.pileType = p.pileType || this.pileType;
+          this.pileDepth = typeof p.pileDepth === 'number' ? p.pileDepth : this.pileDepth;
+          this.pileCount = typeof p.pileCount === 'number' ? p.pileCount : this.pileCount;
+          this.pilePrice = typeof p.pilePrice === 'number' ? p.pilePrice : this.pilePrice;
+          this.pillingInfoSaved = true;
+        }
+        const savedPlinth = localStorage.getItem('plinthInfo');
+        if (savedPlinth) {
+          const pl = JSON.parse(savedPlinth);
+          this.showPlinthInfo = !!pl.showPlinthInfo;
+          this.plinthMaterial = pl.plinthMaterial || this.plinthMaterial;
+          this.plinthBaseSqft = typeof pl.plinthBaseSqft === 'number' ? pl.plinthBaseSqft : this.plinthBaseSqft;
+          this.plinthSqftPrice = typeof pl.plinthSqftPrice === 'number' ? pl.plinthSqftPrice : this.plinthSqftPrice;
+          this.plinthType = pl.plinthType || this.plinthType;
+          this.plinthDepth = typeof pl.plinthDepth === 'number' ? pl.plinthDepth : this.plinthDepth;
+          this.plinthCount = typeof pl.plinthCount === 'number' ? pl.plinthCount : this.plinthCount;
+          this.plinthPrice = typeof pl.plinthPrice === 'number' ? pl.plinthPrice : this.plinthPrice;
+          this.plinthInfoSaved = true;
+        }
+        const savedPayment = localStorage.getItem('paymentStructure');
+        if (savedPayment) {
+          const ps = JSON.parse(savedPayment);
+          this.paymentScheduleCoreHouse = ps.coreHouse || this.paymentScheduleCoreHouse;
+          this.paymentScheduleBuildingWork = ps.building || this.paymentScheduleBuildingWork;
+          this.paymentSchedulePlinthWork = ps.plinth || this.paymentSchedulePlinthWork;
+          this.paymentSchedulePiling = ps.piling || this.paymentSchedulePiling;
+          this.paymentStructureSaved = true;
+        }
+        const savedExtra = localStorage.getItem('extraWorkItems');
+        if (savedExtra) {
+          const arr = JSON.parse(savedExtra);
+          if (Array.isArray(arr)) {
+            this.extraWorkItems = arr;
+            this.extraWorkSaved = true;
+          }
+        }
+    } catch (e) {
+      console.warn('Failed to parse saved company info from localStorage:', e);
+    }
     // Set current date
     const today = new Date();
     this.currentDate = today.toLocaleDateString();
@@ -301,6 +369,8 @@ export class AppComponent implements OnInit {
 
   addExtraWorkItem(): void {
     this.extraWorkItems.push({ description: '', amount: 0, remarks: '' });
+    this.extraWorkSaved = false;
+    this.showExtraWorkSaved = false;
   }
   extraWorkItems: Array<{ description: string; amount?: number; remarks?: string }> = [
     { description: 'Inside Taza (plaster finishing)' },
@@ -325,6 +395,9 @@ export class AppComponent implements OnInit {
   extraWorkDescription: string = '';
   extraWorkAmount: number | null = null;
   extraWorkRemarks: string = '';
+  // Saved state flags
+  superStructureSaved: boolean = false;
+  showSuperStructureSaved: boolean = false;
 
   boreWellItems: Array<{ description: string; quantity: number; rate: number }> = [
      { description: 'Kesing PIPE ORIPLAST 80 SCHEDULE (5 inch)', quantity: 9, rate: 4200 },
@@ -410,6 +483,24 @@ export class AppComponent implements OnInit {
       { label: 'Material dumping & labour camp, starting of work', value: 50 },
       { label: 'After completion', value: 50 }
     ];
+    this.paymentStructureSaved = false;
+    this.showPaymentStructureSaved = false;
+  }
+  savePaymentStructure() {
+    const payload = {
+      coreHouse: this.paymentScheduleCoreHouse,
+      building: this.paymentScheduleBuildingWork,
+      plinth: this.paymentSchedulePlinthWork,
+      piling: this.paymentSchedulePiling
+    };
+    localStorage.setItem('paymentStructure', JSON.stringify(payload));
+    this.paymentStructureSaved = true;
+    this.showPaymentStructureSaved = true;
+    setTimeout(() => (this.showPaymentStructureSaved = false), 2000);
+  }
+  clearSavedPaymentStructure() {
+    localStorage.removeItem('paymentStructure');
+    this.resetPaymentStructure();
   }
   // Reset a dynamic floor's fields to defaults
   resetFloorInfo(index: number) {
@@ -418,10 +509,10 @@ export class AppComponent implements OnInit {
         showInfo: true,
         brandedMaterial: 'Wall finish (Asian/Birla Putty), Premium Paint (Asian Paint + Weather Coat). Electrical: Finolex/Anchor/Havells. Flooring: Somany Tiles (4x2). Staircase: Marble. Inside doors: 30mm Ply waterproof. Main Door: Teak. Kitchen chimney: Branded. Chowkath: WPC (5”x2.5”). Windows: PVC with mosquito cover & glass. Plumbing: Oriplast/Supreme, Jaguar. Grills: GI. Balcony: SS. Kitchen slab: Granite',
         nonBrandedMaterial: 'Cement Chowkath, Color Putty (2 coats), Primer (1 coat), Paint (2 coats). Electrical: Finolex wire, module switch. Tiles (Non branded). Windows: Aluminium. Doors: Flush door 300mm laminated both sides. Tiles: Local 2x2. Plumbing: Supreme/Oriplast. Bathroom fittings: Parryware. MS Grill',
-        baseSqft: 1500,
+        baseSqft: this.plinthBaseSqft || 0,
         coreHouseSqft: 0,
         coreHouseSqftPrice: 980,
-        finishingSqft: 1500,
+        finishingSqft: this.plinthBaseSqft || 0,
         finishingPriceType: 'branded',
         finishingPrice: 1650,
         superStructureSqftPrice: 0
@@ -469,10 +560,10 @@ export class AppComponent implements OnInit {
         showInfo: true,
         brandedMaterial: 'Wall finish (Asian/Birla Putty), Premium Paint (Asian Paint + Weather Coat). Electrical: Finolex/Anchor/Havells. Flooring: Somany Tiles (4x2). Staircase: Marble. Inside doors: 30mm Ply waterproof. Main Door: Teak. Kitchen chimney: Branded. Chowkath: WPC (5”x2.5”). Windows: PVC with mosquito cover & glass. Plumbing: Oriplast/Supreme, Jaguar. Grills: GI. Balcony: SS. Kitchen slab: Granite',
         nonBrandedMaterial: 'Cement Chowkath, Color Putty (2 coats), Primer (1 coat), Paint (2 coats). Electrical: Finolex wire, module switch. Tiles (Non branded). Windows: Aluminium. Doors: Flush door 300mm laminated both sides. Tiles: Local 2x2. Plumbing: Supreme/Oriplast. Bathroom fittings: Parryware. MS Grill',
-        baseSqft: 1500,
+        baseSqft: this.plinthBaseSqft || 0,
         coreHouseSqft: 0,
         coreHouseSqftPrice: 980,
-        finishingSqft: 1500,
+        finishingSqft: this.plinthBaseSqft || 0,
         finishingPriceType: 'branded',
         finishingPrice: 1650,
         superStructureSqftPrice: 0
@@ -553,6 +644,28 @@ export class AppComponent implements OnInit {
   this.finishingSqft = 1500;
   this.finishingPriceType = 'branded';
   this.finishingPrice = 1650;
+  this.superStructureSaved = false;
+  this.showSuperStructureSaved = false;
+  }
+  saveSuperStructure() {
+    const payload = {
+      superStructureMaterial: this.superStructureMaterial || '',
+      superStructureMaterial2: this.superStructureMaterial2 || '',
+      superStructureBaseSqft: this.superStructureBaseSqft || 0,
+      coreHouseSqft: this.coreHouseSqft || 0,
+      coreHouseSqftPrice: this.coreHouseSqftPrice || 0,
+      finishingSqft: this.finishingSqft || 0,
+      finishingPriceType: this.finishingPriceType || 'branded',
+      finishingPrice: this.finishingPrice || 0
+    };
+    localStorage.setItem('superStructureInfo', JSON.stringify(payload));
+    this.superStructureSaved = true;
+    this.showSuperStructureSaved = true;
+    setTimeout(() => (this.showSuperStructureSaved = false), 2000);
+  }
+  clearSavedSuperStructure() {
+    localStorage.removeItem('superStructureInfo');
+    this.resetSuperStructureInfo();
   }
   pillingMaterial: string = 'Tata Tiscon Rods, Ultratech Super Cement, Black Stone, Quality Sand';
   plinthMaterial: string = 'Tata Tiscon Rod, Ultratech Cement, Black Stone, Quality Sand, Fly Ash Bricks';
@@ -576,10 +689,64 @@ export class AppComponent implements OnInit {
   resetPlinthInfo() {
     this.plinthBaseSqft = 1500;
     this.plinthSqftPrice = 650;
+    this.plinthInfoSaved = false;
+    this.showPlinthInfoSaved = false;
+  }
+  // When Plinth base changes, reflect it to Super Structure (Ground) and all Floors
+  onPlinthBaseSqftChange(value: number) {
+    const newBase = Math.max(0, Number(value) || 0);
+    this.plinthBaseSqft = newBase;
+    // Update Ground (Super Structure)
+    this.superStructureBaseSqft = newBase;
+    const base = this.superStructureBaseSqft || 0;
+    this.coreHouseSqft = Math.max(0, Math.min(Number(this.coreHouseSqft) || 0, base));
+    this.finishingSqft = Math.max(0, base - this.coreHouseSqft);
+    // Update all floors
+    (this.floors || []).forEach(f => {
+      f.baseSqft = newBase;
+      const fb = f.baseSqft || 0;
+      f.coreHouseSqft = Math.max(0, Math.min(Number(f.coreHouseSqft) || 0, fb));
+      f.finishingSqft = Math.max(0, fb - (Number(f.coreHouseSqft) || 0));
+    });
+  }
+  savePlinthInfo() {
+    const payload = {
+      showPlinthInfo: !!this.showPlinthInfo,
+      plinthMaterial: this.plinthMaterial || '',
+      plinthBaseSqft: this.plinthBaseSqft || 0,
+      plinthSqftPrice: this.plinthSqftPrice || 0,
+      plinthType: this.plinthType || '',
+      plinthDepth: this.plinthDepth || 0,
+      plinthCount: this.plinthCount || 0,
+      plinthPrice: this.plinthPrice || 0
+    };
+    localStorage.setItem('plinthInfo', JSON.stringify(payload));
+    this.plinthInfoSaved = true;
+    this.showPlinthInfoSaved = true;
+    setTimeout(() => (this.showPlinthInfoSaved = false), 2000);
+  }
+  clearSavedPlinthInfo() {
+    localStorage.removeItem('plinthInfo');
+    this.resetPlinthInfo();
   }
   clientPrefix: string = 'Mr';
   showCompanyInfo = false;
   showClientInfo = false;
+  // Company info save state & notification flags
+  companyInfoSaved: boolean = false;
+  showCompanyInfoSaved: boolean = false;
+  // Pilling save state & notification
+  pillingInfoSaved: boolean = false;
+  showPillingInfoSaved: boolean = false;
+  // Plinth save state & notification
+  plinthInfoSaved: boolean = false;
+  showPlinthInfoSaved: boolean = false;
+  // Payment structure save state & notification
+  paymentStructureSaved: boolean = false;
+  showPaymentStructureSaved: boolean = false;
+  // Extra work save state & notification
+  extraWorkSaved: boolean = false;
+  showExtraWorkSaved: boolean = false;
 
   // Pilling Foundation state
   showPillingInfo = false;
@@ -600,11 +767,31 @@ export class AppComponent implements OnInit {
     this.pileDepth = 19.685;
     this.pileCount = 1;
     this.pilePrice = 600;
+    this.pillingInfoSaved = false;
+    this.showPillingInfoSaved = false;
+  }
+  savePillingInfo() {
+    const payload = {
+      isPillingRequired: !!this.isPillingRequired,
+      pillingMaterial: this.pillingMaterial || '',
+      pileType: this.pileType || '',
+      pileDepth: this.pileDepth || 0,
+      pileCount: this.pileCount || 0,
+      pilePrice: this.pilePrice || 0
+    };
+    localStorage.setItem('pillingInfo', JSON.stringify(payload));
+    this.pillingInfoSaved = true;
+    this.showPillingInfoSaved = true;
+    setTimeout(() => (this.showPillingInfoSaved = false), 2000);
+  }
+  clearSavedPillingInfo() {
+    localStorage.removeItem('pillingInfo');
+    this.resetPillingInfo();
   }
 
-  companyName: string = 'NextGEN Infra';
-  companyAddress: string = 'GA-48, Niladri Vihar, Near Buddha Park, Bhubaneswar – 751021';
-  companyMobile: string = '+91-9861104499 / +91-9702160068';
+  companyName: string = '';
+  companyAddress: string = '';
+  companyMobile: string = '';
 
   toggleCompanyInfo() {
     this.showCompanyInfo = !this.showCompanyInfo;
@@ -622,10 +809,34 @@ export class AppComponent implements OnInit {
   }
 
   resetCompanyInfo() {
-    this.companyName = 'NextGEN Infra';
-    this.companyAddress = 'GA-48, Niladri Vihar, Near Buddha Park, Bhubaneswar – 751021';
-    this.companyMobile = '+91-9861104499 / +91-9702160068';
+    this.companyName = '';
+    this.companyAddress = '';
+    this.companyMobile = '';
+    // Re-enable Save and hide any prior saved notification
+    this.companyInfoSaved = false;
+    this.showCompanyInfoSaved = false;
   }
+  
+  saveCompanyInfo() {
+    const payload = {
+      companyName: this.companyName || '',
+      companyAddress: this.companyAddress || '',
+      companyMobile: this.companyMobile || ''
+    };
+    localStorage.setItem('companyInfo', JSON.stringify(payload));
+    // Disable Save and show brief "Saved" notice
+    this.companyInfoSaved = true;
+    this.showCompanyInfoSaved = true;
+    setTimeout(() => {
+      this.showCompanyInfoSaved = false;
+    }, 2000);
+  }
+
+  clearSavedCompanyInfo() {
+    localStorage.removeItem('companyInfo');
+    this.resetCompanyInfo();
+  }
+  
   title = 'InstantCostEstimator';
     // name and location are already defined below, so do not redeclare here
     totalEstimate = 2500; // Example, replace with actual data source
@@ -733,10 +944,28 @@ export class AppComponent implements OnInit {
 
   resetExtraWork() {
     this.extraWorkItems = this.initialExtraWorkItems.map(desc => ({ description: desc }));
+    this.extraWorkSaved = false;
+    this.showExtraWorkSaved = false;
   }
 
   deleteExtraWorkItem(index: number) {
     this.extraWorkItems.splice(index, 1);
+    this.extraWorkSaved = false;
+    this.showExtraWorkSaved = false;
+  }
+  onExtraWorkChanged() {
+    this.extraWorkSaved = false;
+    this.showExtraWorkSaved = false;
+  }
+  saveExtraWork() {
+    localStorage.setItem('extraWorkItems', JSON.stringify(this.extraWorkItems || []));
+    this.extraWorkSaved = true;
+    this.showExtraWorkSaved = true;
+    setTimeout(() => (this.showExtraWorkSaved = false), 2000);
+  }
+  clearSavedExtraWork() {
+    localStorage.removeItem('extraWorkItems');
+    this.resetExtraWork();
   }
   // Expand/collapse all logic (add Payment Structure)
   expandAll() {

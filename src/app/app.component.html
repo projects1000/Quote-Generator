@@ -1,6 +1,13 @@
 <div class="quote-container">
   <div class="quote-beautiful" style="display:flex;align-items:center;justify-content:space-between;">
-  <h1 style="margin:0;">{{companyName ? companyName + ' Quotation' : 'Quotation'}}</h1>
+    <div style="display:flex;flex-direction:column;">
+      <h1 style="margin:0;">{{companyName ? companyName + ' Quotation' : 'Quotation'}}</h1>
+      <!-- Developer credit directly below the heading with some gap -->
+      <div class="developer-credit" style="margin-top:12px;text-align:left;color:#555;font-size:12px;line-height:1.2;">
+        <div>Developed by : <strong>Priyabrata Pattanaik</strong></div>
+        <div>+91-9702160068</div>
+      </div>
+    </div>
     <div style="display:flex;align-items:center;">
   <input type="file" #logoInput accept="image/*" style="display:none;" (change)="onLogoSelected($event)" />
       <div style="width:2px;height:32px;background:#ccc;margin:0 20px;"></div>
@@ -21,6 +28,7 @@
   </div>
   <button *ngIf="!logoUrl" type="button" (click)="logoInput.click()" style="background:#1976d2;color:#fff;border:none;border-radius:4px;padding:6px 18px;cursor:pointer;margin-right:16px;">Add Logo</button>
   <!-- Generate Quotation Button -->
+
 
   <!-- Quotation Summary Display -->
   <div *ngIf="showQuotationSummary" style="margin:32px auto;max-width:900px;padding:32px 24px;background:#f7f7f7;border-radius:12px;box-shadow:0 2px 12px #ccc;">
@@ -61,8 +69,17 @@
         <input id="companyMobile" type="tel" class="company-input" [(ngModel)]="companyMobile" />
       </div>
 
-      <div class="section-actions">
+      <div class="section-actions" style="display:flex;align-items:center;gap:8px;">
         <button class="company-reset-btn" type="button" (click)="resetCompanyInfo()">Reset</button>
+        <button class="company-reset-btn"
+    type="button"
+    (click)="saveCompanyInfo()"
+    [disabled]="companyInfoSaved"
+    [ngStyle]="{ 'margin-left.px': 8, 'background': '#1976d2', 'color': '#fff', 'opacity': companyInfoSaved ? 0.6 : 1 }">
+          SAVE DEFAULT INFO
+  </button>
+        <button class="company-reset-btn" type="button" (click)="clearSavedCompanyInfo()" style="margin-left:8px;">Clear Saved</button>
+        <span *ngIf="showCompanyInfoSaved" style="color:#388e3c;font-weight:600;margin-left:8px;">Saved</span>
       </div>
     </div>
   </div>
@@ -153,8 +170,11 @@
         </div>
       </div>
 
-      <div class="section-actions">
-        <button class="company-reset-btn" type="button" (click)="resetPillingInfo()" [disabled]="!isPillingRequired">Reset</button>
+      <div class="section-actions" style="display:flex;align-items:center;gap:8px;">
+    <button class="company-reset-btn" type="button" (click)="resetPillingInfo()" [disabled]="!isPillingRequired">Reset</button>
+  <button class="company-reset-btn" type="button" (click)="savePillingInfo()" [disabled]="!isPillingRequired || pillingInfoSaved">SAVE DEFAULT INFO</button>
+        <button class="company-reset-btn" type="button" (click)="clearSavedPillingInfo()" [disabled]="!isPillingRequired">Clear Saved</button>
+        <span *ngIf="showPillingInfoSaved" style="color:#388e3c;font-weight:600;">Saved</span>
       </div>
     </div>
   </div>
@@ -173,8 +193,8 @@
       </div>
 
       <div class="company-info-row">
-        <label for="plinthBaseSqft">Total Base Square Ft</label>
-        <input id="plinthBaseSqft" type="text" class="company-input" [(ngModel)]="plinthBaseSqft" placeholder="Base Sq Ft" style="width:30%;max-width:180px;" />
+  <label for="plinthBaseSqft">Total Base Square Ft</label>
+  <input id="plinthBaseSqft" type="text" class="company-input" [(ngModel)]="plinthBaseSqft" (ngModelChange)="onPlinthBaseSqftChange($event)" placeholder="Base Sq Ft" style="width:30%;max-width:180px;" />
       </div>
       <div class="company-info-row">
         <label for="plinthSqftPrice">Sq Ft Price</label>
@@ -185,8 +205,11 @@
   <input id="plinthTotalCost" type="text" class="company-input" [value]="plinthBaseSqft * plinthSqftPrice" readonly style="width:30%;max-width:180px;font-weight:bold;" />
         </div>
 
-      <div class="section-actions">
-        <button class="company-reset-btn" type="button" (click)="resetPlinthInfo()">Reset</button>
+      <div class="section-actions" style="display:flex;align-items:center;gap:8px;">
+    <button class="company-reset-btn" type="button" (click)="resetPlinthInfo()">Reset</button>
+  <button class="company-reset-btn" type="button" (click)="savePlinthInfo()" [disabled]="plinthInfoSaved">SAVE DEFAULT INFO</button>
+        <button class="company-reset-btn" type="button" (click)="clearSavedPlinthInfo()">Clear Saved</button>
+        <span *ngIf="showPlinthInfoSaved" style="color:#388e3c;font-weight:600;">Saved</span>
       </div>
     </div>
   </div>
@@ -201,7 +224,7 @@
     <span class="arrow" [class.open]="showSuperStructureInfo">&#9660;</span>
   </button>
 
-  <div class="company-details" *ngIf="showSuperStructureInfo">
+    <div class="company-details" *ngIf="showSuperStructureInfo">
     <h3 style="margin-top:0;margin-bottom:16px;color:#1976d2;font-size:22px;font-weight:600;">Ground Floor</h3>
     <div class="company-info-row">
       <label for="superStructureMaterial">Branded Material</label>
@@ -212,23 +235,23 @@
       <input id="superStructureMaterial2" type="text" class="company-input" [(ngModel)]="superStructureMaterial2" placeholder="Enter material details" style="width:100%;max-width:1000px;" />
     </div>
     <div class="company-info-row">
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; align-items: center;">
+      <div class="grid-3-cols">
         <div style="display: flex; flex-direction: column; align-items: flex-start;">
           <label for="superStructureBaseSqft" style="margin-bottom:4px;font-weight:500;">Total Base Part size in Sq ft</label>
-          <div style="display:flex;align-items:center;">
+          <div class="inline-controls">
             <input id="superStructureBaseSqft" type="number" class="company-input" [(ngModel)]="superStructureBaseSqft" placeholder="Total Base" style="width:180px;" (ngModelChange)="onSuperStructureBaseSqftChange($event)" (blur)="enforceSuperStructureBounds()" />
             <span style="font-size:20px;margin-left:8px;">=</span>
           </div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-start;">
           <label for="coreHouseSqft" style="margin-bottom:4px;font-weight:500;white-space:nowrap;font-size:15px;">Core House Part size in Sq ft</label>
-          <div style="display:flex;align-items:center;">
+          <div class="inline-controls">
             <input id="coreHouseSqft" type="number" class="company-input" [(ngModel)]="coreHouseSqft" placeholder="Core House" style="width:180px;" (ngModelChange)="onCoreHouseSqftChange($event)" (blur)="enforceSuperStructureBounds()" [attr.max]="superStructureBaseSqft || null" />
             <span style="font-size:20px;margin-left:8px;">+</span>
           </div>
           <label for="coreHouseSqftPrice" style="margin-top:8px;font-size:14px;">Sq Ft Price</label>
           <input id="coreHouseSqftPrice" type="number" class="company-input" [(ngModel)]="coreHouseSqftPrice" placeholder="Sq Ft Price" style="width:180px;" />
-          <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
+          <div class="inline-controls" style="margin-top:8px;">
             <label for="coreHouseTotal" style="font-size:14px; font-weight:bold;">Total (Rs.)</label>
             <input id="coreHouseTotal" type="text" class="company-input" [value]="(coreHouseSqft || 0) * (coreHouseSqftPrice || 0)" readonly style="width:180px;font-weight:bold;" />
           </div>
@@ -236,7 +259,7 @@
         <div style="display: flex; flex-direction: column; align-items: flex-start;">
           <label for="finishingSqft" style="margin-bottom:4px;font-weight:500;">Finishing Part size in Sq ft</label>
           <input id="finishingSqft" type="number" class="company-input" [(ngModel)]="finishingSqft" placeholder="Finishing" style="width:320px;max-width:320px;" readonly />
-          <div style="margin-top:8px; display: flex; align-items: center; gap: 16px;">
+          <div class="inline-controls" style="margin-top:8px;">
             <label style="font-size:14px; margin-right:16px; white-space:nowrap;">Sq Ft Price</label>
             <div style="display:flex;flex-direction:column;gap:8px;min-width:120px;">
               <label style="display:flex;align-items:center;gap:8px;">
@@ -255,7 +278,7 @@
                    style="width:120px; margin-left:24px;"
                    aria-label="Finishing price per sqft (editable)" />
           </div>
-          <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
+          <div class="inline-controls" style="margin-top:8px;">
             <label for="finishingTotal" style="font-size:14px; font-weight:bold;">Total (Rs.)</label>
             <input id="finishingTotal" type="text" class="company-input" [value]="(finishingSqft || 0) * (finishingPrice || 0)" readonly style="width:180px;font-weight:bold;" />
           </div>
@@ -272,8 +295,11 @@
   <label for="superStructureTotalCost" style="font-weight:bold;">Total Cost</label>
   <input id="superStructureTotalCost" type="text" class="company-input" [value]="(coreHouseSqft * coreHouseSqftPrice) + (finishingSqft * finishingPrice)" readonly style="width:30%;max-width:180px;font-weight:bold;" />
     </div>
-    <div class="section-actions">
+    <div class="section-actions" style="display:flex;align-items:center;gap:8px;">
       <button class="company-reset-btn" type="button" (click)="resetSuperStructureInfo()">Reset</button>
+  <button class="company-reset-btn" type="button" (click)="saveSuperStructure()" [disabled]="superStructureSaved">SAVE DEFALUT INFO</button>
+      <button class="company-reset-btn" type="button" (click)="clearSavedSuperStructure()">Clear Saved</button>
+      <span *ngIf="showSuperStructureSaved" style="color:#388e3c;font-weight:600;">Saved</span>
     </div>
     <!-- Dynamic Floors Container -->
     <div *ngFor="let floor of floors; let i = index" class="company-section" style="margin-top:32px;">
@@ -295,23 +321,23 @@
           <input type="text" class="company-input" [(ngModel)]="floor.nonBrandedMaterial" placeholder="Enter material details" style="width:100%;max-width:1000px;" />
         </div>
         <div class="company-info-row">
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; align-items: center;">
+          <div class="grid-3-cols">
             <div style="display: flex; flex-direction: column; align-items: flex-start;">
               <label style="margin-bottom:4px;font-weight:500;">Total Base Part size in Sq ft</label>
-              <div style="display:flex;align-items:center;">
+              <div class="inline-controls">
                 <input type="number" class="company-input" [(ngModel)]="floor.baseSqft" placeholder="Total Base" style="width:180px;" [value]="1500" (ngModelChange)="onFloorBaseSqftChange(i, $event)" (blur)="enforceFloorBounds(i)" />
                 <span style="font-size:20px;margin-left:8px;">=</span>
               </div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-start;">
               <label style="margin-bottom:4px;font-weight:500;white-space:nowrap;font-size:15px;">Core House Part size in Sq ft</label>
-              <div style="display:flex;align-items:center;">
+              <div class="inline-controls">
                 <input type="number" class="company-input" [(ngModel)]="floor.coreHouseSqft" placeholder="Core House" style="width:180px;" [value]="0" (ngModelChange)="onFloorCoreHouseSqftChange(i, $event)" (blur)="enforceFloorBounds(i)" [attr.max]="floor.baseSqft || null" />
                 <span style="font-size:20px;margin-left:8px;">+</span>
               </div>
               <label style="margin-top:8px;font-size:14px;">Sq Ft Price</label>
               <input type="number" class="company-input" [(ngModel)]="floor.coreHouseSqftPrice" placeholder="Sq Ft Price" style="width:180px;" />
-              <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
+              <div class="inline-controls" style="margin-top:8px;">
                 <label style="font-size:14px; font-weight:bold;">Total (Rs.)</label>
                 <input type="text" class="company-input" [value]="(floor.coreHouseSqft || 0) * (floor.coreHouseSqftPrice || 0)" readonly style="width:180px;font-weight:bold;" />
               </div>
@@ -319,7 +345,7 @@
             <div style="display: flex; flex-direction: column; align-items: flex-start;">
               <label style="margin-bottom:4px;font-weight:500;">Finishing Part size in Sq ft</label>
               <input type="number" class="company-input" [(ngModel)]="floor.finishingSqft" placeholder="Finishing" style="width:320px;max-width:320px;" [value]="1500" readonly />
-              <div style="margin-top:8px; display: flex; align-items: center; gap: 16px;">
+              <div class="inline-controls" style="margin-top:8px;">
                 <label style="font-size:14px; margin-right:16px; white-space:nowrap;">Sq Ft Price</label>
                 <div style="display:flex;flex-direction:column;gap:8px;min-width:120px;">
                   <label style="display:flex;align-items:center;gap:8px;">
@@ -345,7 +371,7 @@
                        style="width:120px; margin-left:24px;"
                        aria-label="Floor finishing price (editable)" />
               </div>
-              <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
+              <div class="inline-controls" style="margin-top:8px;">
                 <label style="font-size:14px; font-weight:bold;">Total (Rs.)</label>
                 <input type="text" class="company-input" [value]="(floor.finishingSqft || 0) * (floor.finishingPrice || 0)" readonly style="width:180px;font-weight:bold;" />
               </div>
@@ -414,7 +440,7 @@
       <span>Payment Structure</span>
       <span class="arrow" [class.open]="showPaymentStructure">&#9660;</span>
     </button>
-    <div class="company-details" *ngIf="showPaymentStructure">
+  <div class="company-details" *ngIf="showPaymentStructure">
       <h3 style="margin-top:0;color:#1976d2;font-size:18px;font-weight:600;">Payment Schedule (Core House)</h3>
       <div class="company-info-row" *ngFor="let item of paymentScheduleCoreHouse; let i = index">
         <label>{{item.label}}</label>
@@ -447,8 +473,11 @@
           <span>%</span>
         </span>
       </div>
-      <div class="section-actions" style="margin-top:24px;">
-        <button class="company-reset-btn" type="button" (click)="resetPaymentStructure()">Reset</button>
+      <div class="section-actions" style="margin-top:24px;display:flex;align-items:center;gap:8px;">
+    <button class="company-reset-btn" type="button" (click)="resetPaymentStructure()">Reset</button>
+  <button class="company-reset-btn" type="button" (click)="savePaymentStructure()" [disabled]="paymentStructureSaved">SAVE DEFAULT INFO</button>
+        <button class="company-reset-btn" type="button" (click)="clearSavedPaymentStructure()">Clear Saved</button>
+        <span *ngIf="showPaymentStructureSaved" style="color:#388e3c;font-weight:600;">Saved</span>
       </div>
     </div>
   </div>
@@ -460,15 +489,18 @@
       </button>
       <div class="company-details" *ngIf="showExtraWork">
         <div *ngFor="let item of extraWorkItems; let i = index" class="company-info-row" style="display:flex;align-items:center;gap:12px;">
-          <input type="text" class="company-input" [(ngModel)]="item.description" placeholder="Extra Work Item" />
+          <input type="text" class="company-input" [(ngModel)]="item.description" (ngModelChange)="onExtraWorkChanged()" placeholder="Extra Work Item" />
           <button type="button" (click)="deleteExtraWorkItem(i)" style="background:#e53935;color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;">Delete</button>
         </div>
         <div style="display:flex;justify-content:center;margin:16px 0;">
           <button type="button" (click)="addExtraWorkItem()" style="font-size:20px;padding:6px 18px;border-radius:50%;background:#1976d2;color:#fff;border:none;box-shadow:0 2px 8px #ccc;cursor:pointer;">+</button>
           <span style="margin-left:10px;font-size:16px;color:#1976d2;vertical-align:middle;">Add Item</span>
         </div>
-        <div class="section-actions" style="margin-top:24px;">
+        <div class="section-actions" style="margin-top:24px;display:flex;align-items:center;gap:8px;">
           <button class="company-reset-btn" type="button" (click)="resetExtraWork()">Reset</button>
+          <button class="company-reset-btn" type="button" (click)="saveExtraWork()" [disabled]="extraWorkSaved">SAVE DEFAULT INFO</button>
+          <button class="company-reset-btn" type="button" (click)="clearSavedExtraWork()">Clear Saved</button>
+          <span *ngIf="showExtraWorkSaved" style="color:#388e3c;font-weight:600;">Saved</span>
         </div>
       </div>
     </div>
