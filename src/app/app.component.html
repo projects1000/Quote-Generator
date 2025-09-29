@@ -1,6 +1,13 @@
 <div class="quote-container">
   <div class="quote-beautiful" style="display:flex;align-items:center;justify-content:space-between;">
-  <h1 style="margin:0;">{{companyName ? companyName + ' Quotation' : 'Quotation'}}</h1>
+    <div style="display:flex;flex-direction:column;">
+      <h1 style="margin:0;">{{companyName ? companyName + ' Quotation' : 'Quotation'}}</h1>
+      <!-- Developer credit directly below the heading with some gap -->
+      <div class="developer-credit" style="margin-top:12px;text-align:left;color:#555;font-size:12px;line-height:1.2;">
+        <div>Developed by : <strong>Priyabrata Pattanaik</strong></div>
+        <div>+91-9702160068</div>
+      </div>
+    </div>
     <div style="display:flex;align-items:center;">
   <input type="file" #logoInput accept="image/*" style="display:none;" (change)="onLogoSelected($event)" />
       <div style="width:2px;height:32px;background:#ccc;margin:0 20px;"></div>
@@ -21,6 +28,7 @@
   </div>
   <button *ngIf="!logoUrl" type="button" (click)="logoInput.click()" style="background:#1976d2;color:#fff;border:none;border-radius:4px;padding:6px 18px;cursor:pointer;margin-right:16px;">Add Logo</button>
   <!-- Generate Quotation Button -->
+
 
   <!-- Quotation Summary Display -->
   <div *ngIf="showQuotationSummary" style="margin:32px auto;max-width:900px;padding:32px 24px;background:#f7f7f7;border-radius:12px;box-shadow:0 2px 12px #ccc;">
