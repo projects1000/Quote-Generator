@@ -78,13 +78,18 @@ export class AppComponent implements OnInit {
           this.paymentStructureSaved = true;
         }
         const savedExtra = localStorage.getItem('extraWorkItems');
-        if (savedExtra) {
-          const arr = JSON.parse(savedExtra);
-          if (Array.isArray(arr)) {
-            this.extraWorkItems = arr;
-            this.extraWorkSaved = true;
-          }
-        }
+            if (savedExtra) {
+              const arr = JSON.parse(savedExtra);
+              if (Array.isArray(arr)) {
+                // ensure amount defaults to 0 if missing
+                this.extraWorkItems = arr.map((it: any) => ({
+                  description: it?.description || '',
+                  amount: typeof it?.amount === 'number' ? it.amount : 0,
+                  remarks: it?.remarks || ''
+                }));
+                this.extraWorkSaved = true;
+              }
+            }
     } catch (e) {
       console.warn('Failed to parse saved company info from localStorage:', e);
     }
@@ -373,11 +378,11 @@ export class AppComponent implements OnInit {
     this.showExtraWorkSaved = false;
   }
   extraWorkItems: Array<{ description: string; amount?: number; remarks?: string }> = [
-    { description: 'Inside Taza (plaster finishing)' },
-    { description: 'Underground Sump / Water Tank' },
-    { description: 'Boundary Wall & Main Gate' },
-    { description: 'External Flooring' },
-    { description: 'Septic Tank / Soak Pit/ Parapit/ Gridding /Headroom' }
+    { description: 'Inside Taza (plaster finishing)', amount: 0 },
+    { description: 'Underground Sump / Water Tank', amount: 0 },
+    { description: 'Boundary Wall & Main Gate', amount: 0 },
+    { description: 'External Flooring', amount: 0 },
+    { description: 'Septic Tank / Soak Pit/ Parapit/ Gridding /Headroom', amount: 0 }
   ];
   isBoreWellRequired: boolean = false;
 
@@ -943,7 +948,7 @@ export class AppComponent implements OnInit {
   // Merged into main ngOnInit above
 
   resetExtraWork() {
-    this.extraWorkItems = this.initialExtraWorkItems.map(desc => ({ description: desc }));
+    this.extraWorkItems = this.initialExtraWorkItems.map(desc => ({ description: desc, amount: 0 }));
     this.extraWorkSaved = false;
     this.showExtraWorkSaved = false;
   }
@@ -966,6 +971,9 @@ export class AppComponent implements OnInit {
   clearSavedExtraWork() {
     localStorage.removeItem('extraWorkItems');
     this.resetExtraWork();
+  }
+  get grandTotalExtraWork(): number {
+    return (this.extraWorkItems || []).reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
   }
   // Expand/collapse all logic (add Payment Structure)
   expandAll() {
