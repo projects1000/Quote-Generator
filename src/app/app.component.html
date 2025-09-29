@@ -204,30 +204,34 @@
   <div class="company-details" *ngIf="showSuperStructureInfo">
     <h3 style="margin-top:0;margin-bottom:16px;color:#1976d2;font-size:22px;font-weight:600;">Ground Floor</h3>
     <div class="company-info-row">
-  <label for="superStructureMaterial">Branded Material</label>
-  <input id="superStructureMaterial" type="text" class="company-input" [(ngModel)]="superStructureMaterial" placeholder="Enter material details" style="width:100%;max-width:1000px;" [value]="'Wall finish (Asian/Birla Putty), Premium Paint (Asian Paint + Weather Coat). Electrical: Finolex/Anchor/Havells. Flooring: Somany Tiles (4x2). Staircase: Marble. Inside doors: 30mm Ply waterproof. Main Door: Teak. Kitchen chimney: Branded. Chowkath: WPC (5”x2.5”). Windows: PVC with mosquito cover & glass. Plumbing: Oriplast/Supreme, Jaguar. Grills: GI. Balcony: SS. Kitchen slab: Granite'" />
+      <label for="superStructureMaterial">Branded Material</label>
+      <input id="superStructureMaterial" type="text" class="company-input" [(ngModel)]="superStructureMaterial" placeholder="Enter material details" style="width:100%;max-width:1000px;" [value]="'Wall finish (Asian/Birla Putty), Premium Paint (Asian Paint + Weather Coat). Electrical: Finolex/Anchor/Havells. Flooring: Somany Tiles (4x2). Staircase: Marble. Inside doors: 30mm Ply waterproof. Main Door: Teak. Kitchen chimney: Branded. Chowkath: WPC (5”x2.5”). Windows: PVC with mosquito cover & glass. Plumbing: Oriplast/Supreme, Jaguar. Grills: GI. Balcony: SS. Kitchen slab: Granite'" />
     </div>
     <div class="company-info-row">
-  <label for="superStructureMaterial2">Non Branded Material</label>
-    <input id="superStructureMaterial2" type="text" class="company-input" [(ngModel)]="superStructureMaterial2" placeholder="Enter material details" style="width:100%;max-width:1000px;" />
+      <label for="superStructureMaterial2">Non Branded Material</label>
+      <input id="superStructureMaterial2" type="text" class="company-input" [(ngModel)]="superStructureMaterial2" placeholder="Enter material details" style="width:100%;max-width:1000px;" />
     </div>
     <div class="company-info-row">
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; align-items: center;">
         <div style="display: flex; flex-direction: column; align-items: flex-start;">
           <label for="superStructureBaseSqft" style="margin-bottom:4px;font-weight:500;">Total Base Part size in Sq ft</label>
           <div style="display:flex;align-items:center;">
-            <input id="superStructureBaseSqft" type="number" class="company-input" [(ngModel)]="superStructureBaseSqft" placeholder="Total Base" style="width:180px;" (ngModelChange)="onSuperStructureBaseSqftChange($event)" />
+            <input id="superStructureBaseSqft" type="number" class="company-input" [(ngModel)]="superStructureBaseSqft" placeholder="Total Base" style="width:180px;" (ngModelChange)="onSuperStructureBaseSqftChange($event)" (blur)="enforceSuperStructureBounds()" />
             <span style="font-size:20px;margin-left:8px;">=</span>
           </div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-start;">
           <label for="coreHouseSqft" style="margin-bottom:4px;font-weight:500;white-space:nowrap;font-size:15px;">Core House Part size in Sq ft</label>
           <div style="display:flex;align-items:center;">
-            <input id="coreHouseSqft" type="number" class="company-input" [(ngModel)]="coreHouseSqft" placeholder="Core House" style="width:180px;" (ngModelChange)="onCoreHouseSqftChange($event)" />
+            <input id="coreHouseSqft" type="number" class="company-input" [(ngModel)]="coreHouseSqft" placeholder="Core House" style="width:180px;" (ngModelChange)="onCoreHouseSqftChange($event)" (blur)="enforceSuperStructureBounds()" [attr.max]="superStructureBaseSqft || null" />
             <span style="font-size:20px;margin-left:8px;">+</span>
           </div>
           <label for="coreHouseSqftPrice" style="margin-top:8px;font-size:14px;">Sq Ft Price</label>
           <input id="coreHouseSqftPrice" type="number" class="company-input" [(ngModel)]="coreHouseSqftPrice" placeholder="Sq Ft Price" style="width:180px;" />
+          <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
+            <label for="coreHouseTotal" style="font-size:14px; font-weight:bold;">Total (Rs.)</label>
+            <input id="coreHouseTotal" type="text" class="company-input" [value]="(coreHouseSqft || 0) * (coreHouseSqftPrice || 0)" readonly style="width:180px;font-weight:bold;" />
+          </div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-start;">
           <label for="finishingSqft" style="margin-bottom:4px;font-weight:500;">Finishing Part size in Sq ft</label>
@@ -251,13 +255,19 @@
                    style="width:120px; margin-left:24px;"
                    aria-label="Finishing price per sqft (editable)" />
           </div>
+          <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
+            <label for="finishingTotal" style="font-size:14px; font-weight:bold;">Total (Rs.)</label>
+            <input id="finishingTotal" type="text" class="company-input" [value]="(finishingSqft || 0) * (finishingPrice || 0)" readonly style="width:180px;font-weight:bold;" />
+          </div>
         </div>
       </div>
     </div>
-    <div class="company-info-row">
-      <label for="superStructureSqftPrice">Sq Ft Price</label>
-      <input id="superStructureSqftPrice" type="text" class="company-input" [(ngModel)]="superStructureSqftPrice" placeholder="Price per Sq Ft" style="width:30%;max-width:180px;" />
+
+    <!-- Validation: ensure Core + Finishing does not exceed Base -->
+    <div class="company-info-row" *ngIf="(((coreHouseSqft || 0) + (finishingSqft || 0)) > (superStructureBaseSqft || 0))">
+      <span style="color:#d32f2f;font-weight:600;">Sum of Core House and Finishing ({{(coreHouseSqft || 0) + (finishingSqft || 0)}}) exceeds Total Base size ({{superStructureBaseSqft || 0}}).</span>
     </div>
+ 
     <div class="company-info-row">
   <label for="superStructureTotalCost" style="font-weight:bold;">Total Cost</label>
   <input id="superStructureTotalCost" type="text" class="company-input" [value]="(coreHouseSqft * coreHouseSqftPrice) + (finishingSqft * finishingPrice)" readonly style="width:30%;max-width:180px;font-weight:bold;" />
@@ -275,12 +285,12 @@
         <button type="button" (click)="deleteFloor(i)" style="background:#e53935;color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;margin-left:12px;">Delete</button>
       </div>
       <div class="company-details" *ngIf="floor.showInfo">
-        <h3 style="margin-top:0;margin-bottom:16px;color:#1976d2;font-size:22px;font-weight:600;">{{i+1 === 1 ? '1st' : i+1 === 2 ? '2nd' : i+1 === 3 ? '3rd' : i+1 + 'th'}} Floor</h3>
-        <div class="company-info-row">
+  <h3 style="margin-top:0;margin-bottom:16px;color:#1976d2;font-size:22px;font-weight:600;">{{i+1 === 1 ? '1st' : i+1 === 2 ? '2nd' : i+1 === 3 ? '3rd' : i+1 + 'th'}} Floor</h3>
+        <div class="company-info-row" *ngIf="floor.finishingPriceType === 'branded'">
           <label>Branded Material</label>
           <input type="text" class="company-input" [(ngModel)]="floor.brandedMaterial" placeholder="Enter material details" style="width:100%;max-width:1000px;" />
         </div>
-        <div class="company-info-row">
+        <div class="company-info-row" *ngIf="floor.finishingPriceType === 'nonbranded'">
           <label>Non Branded Material</label>
           <input type="text" class="company-input" [(ngModel)]="floor.nonBrandedMaterial" placeholder="Enter material details" style="width:100%;max-width:1000px;" />
         </div>
@@ -289,18 +299,22 @@
             <div style="display: flex; flex-direction: column; align-items: flex-start;">
               <label style="margin-bottom:4px;font-weight:500;">Total Base Part size in Sq ft</label>
               <div style="display:flex;align-items:center;">
-                <input type="number" class="company-input" [(ngModel)]="floor.baseSqft" placeholder="Total Base" style="width:180px;" [value]="1500" />
+                <input type="number" class="company-input" [(ngModel)]="floor.baseSqft" placeholder="Total Base" style="width:180px;" [value]="1500" (ngModelChange)="onFloorBaseSqftChange(i, $event)" (blur)="enforceFloorBounds(i)" />
                 <span style="font-size:20px;margin-left:8px;">=</span>
               </div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-start;">
               <label style="margin-bottom:4px;font-weight:500;white-space:nowrap;font-size:15px;">Core House Part size in Sq ft</label>
               <div style="display:flex;align-items:center;">
-                <input type="number" class="company-input" [(ngModel)]="floor.coreHouseSqft" placeholder="Core House" style="width:180px;" [value]="0" (ngModelChange)="onFloorCoreHouseSqftChange(i, $event)" />
+                <input type="number" class="company-input" [(ngModel)]="floor.coreHouseSqft" placeholder="Core House" style="width:180px;" [value]="0" (ngModelChange)="onFloorCoreHouseSqftChange(i, $event)" (blur)="enforceFloorBounds(i)" [attr.max]="floor.baseSqft || null" />
                 <span style="font-size:20px;margin-left:8px;">+</span>
               </div>
               <label style="margin-top:8px;font-size:14px;">Sq Ft Price</label>
               <input type="number" class="company-input" [(ngModel)]="floor.coreHouseSqftPrice" placeholder="Sq Ft Price" style="width:180px;" />
+              <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
+                <label style="font-size:14px; font-weight:bold;">Total (Rs.)</label>
+                <input type="text" class="company-input" [value]="(floor.coreHouseSqft || 0) * (floor.coreHouseSqftPrice || 0)" readonly style="width:180px;font-weight:bold;" />
+              </div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-start;">
               <label style="margin-bottom:4px;font-weight:500;">Finishing Part size in Sq ft</label>
@@ -331,13 +345,18 @@
                        style="width:120px; margin-left:24px;"
                        aria-label="Floor finishing price (editable)" />
               </div>
+              <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
+                <label style="font-size:14px; font-weight:bold;">Total (Rs.)</label>
+                <input type="text" class="company-input" [value]="(floor.finishingSqft || 0) * (floor.finishingPrice || 0)" readonly style="width:180px;font-weight:bold;" />
+              </div>
             </div>
           </div>
         </div>
-        <div class="company-info-row">
-          <label>Sq Ft Price</label>
-          <input type="text" class="company-input" [(ngModel)]="floor.superStructureSqftPrice" placeholder="Price per Sq Ft" style="width:30%;max-width:180px;" [value]="0" />
+        <!-- Validation: ensure Core + Finishing does not exceed Base for this floor -->
+        <div class="company-info-row" *ngIf="(((floor.coreHouseSqft || 0) + (floor.finishingSqft || 0)) > (floor.baseSqft || 0))">
+          <span style="color:#d32f2f;font-weight:600;">Sum of Core House and Finishing ({{(floor.coreHouseSqft || 0) + (floor.finishingSqft || 0)}}) exceeds Total Base size ({{floor.baseSqft || 0}}).</span>
         </div>
+   
         <div class="company-info-row">
           <label style="font-weight:bold;">Total Cost</label>
           <input type="text" class="company-input" [value]="(floor.coreHouseSqft * floor.coreHouseSqftPrice) + (floor.finishingSqft * floor.finishingPrice)" readonly style="width:30%;max-width:180px;font-weight:bold;" />

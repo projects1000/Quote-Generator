@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { PdfGeneratorService } from './pdf-generator.service';
 
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -11,6 +12,7 @@ import html2canvas from 'html2canvas';
 export class AppComponent implements OnInit {
   logoUrl: string | null = null;
   currentDate: string = '';
+  constructor(private pdfGeneratorService: PdfGeneratorService) {}
 
   ngOnInit(): void {
     // Load logo from localStorage if available
@@ -30,77 +32,251 @@ export class AppComponent implements OnInit {
       reader.onload = (e: any) => {
         this.logoUrl = e.target.result;
         // Save logo to localStorage for persistence
-  localStorage.setItem('companyLogo', this.logoUrl || '');
+        localStorage.setItem('companyLogo', this.logoUrl || '');
       };
       reader.readAsDataURL(file);
     }
   }
 
   generateQuotation(): void {
-    // Generate PDF with Company Info and Client Info
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 20;
+    // Prepare sections for PDF
+    const sections: Array<{ heading: string; items: string[] }> = [];
+    // Prepare cost breakdown numbers
+    const pillingCost = (this.isPillingRequired ? (Number(this.pileDepth) || 0) * (Number(this.pileCount) || 0) * (Number(this.pilePrice) || 0) : 0);
+    const plinthSqft = Number(this.plinthBaseSqft) || 0;
+    const plinthRate = Number(this.plinthSqftPrice) || 0;
+    const plinthTotal = plinthSqft * plinthRate;
+    // Super Structure total should include Ground Floor (main section) + all dynamic floors
+    const mainCoreSqft = Number(this.coreHouseSqft) || 0;
+    const mainCoreRate = Number(this.coreHouseSqftPrice) || 0;
+    const mainFinishSqft = Number(this.finishingSqft) || 0;
+    const mainFinishRate = Number(this.finishingPrice) || 0;
+    const mainSuperCost = (mainCoreSqft * mainCoreRate) + (mainFinishSqft * mainFinishRate);
 
-    // Date at top right
-    const today = new Date();
-    const dateStr = today.toLocaleDateString();
-    doc.setFontSize(12);
-    doc.text('Date: ' + dateStr, pageWidth - 20, y, { align: 'right' });
+    let floorsSuperCost = 0;
+    if (this.floors && this.floors.length > 0) {
+      for (const f of this.floors) {
+        const coreSqft = Number(f.coreHouseSqft) || 0;
+        const coreRate = Number(f.coreHouseSqftPrice) || 0;
+        const finishSqft = Number(f.finishingSqft) || 0;
+        const finishRate = Number(f.finishingPrice) || 0;
+        floorsSuperCost += coreSqft * coreRate + finishSqft * finishRate;
+      }
+    }
+    const superStructureCost = mainSuperCost + floorsSuperCost;
+    const includeBoreWell = this.isBoreWellRequired || this.showBoreWellCosting;
+    const boreWellCost = includeBoreWell ? (this.boreWellItems || []).reduce((sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.rate) || 0), 0) : 0;
+    const extraWorkCost = (this.extraWorkItems || []).reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
 
-    // Logo at top center (if available)
-    if (this.logoUrl) {
-      // Draw logo as faded background, or normal if preferred
-      doc.addImage(this.logoUrl, 'PNG', pageWidth/2 - 30, y + 5, 60, 25);
-      y += 32;
-    } else {
-      y += 10;
+    // Pilling Quotation (if admin selects checkbox)
+    if (this.isPillingRequired) {
+      const totalPillingCost = (this.pileDepth || 0) * (this.pileCount || 0) * (this.pilePrice || 0);
+      sections.push({
+        heading: 'Pilling Quotation',
+        items: [
+          `Material Information: ${this.pillingMaterial}`,
+          `Pile Type: ${this.pileType}`,
+          `Pile Depth: ${this.pileDepth && this.pileDepth > 0 ? (this.pileDepth + ' ft') : 'to be discussed with client'}`,
+          `Number of Piles: ${this.pileCount}`,
+          `Price Per Feet (Rs.): Rs. ${this.pilePrice}`,
+          `Total Cost: Rs. ${totalPillingCost}`
+        ]
+      });
+    }
+    // Plinth/Foundation Work
+    if (this.showPlinthInfo) {
+      const plinthSqft = Number(this.plinthBaseSqft) || 0;
+      const plinthRate = Number(this.plinthSqftPrice) || 0; // e.g., 650 per sqft
+      const plinthTotal = plinthSqft * plinthRate;
+      sections.push({
+        heading: 'Plinth/Foundation Work',
+        items: [
+          `Type: ${this.plinthType}`,
+          `Depth: ${this.plinthDepth && this.plinthDepth > 0 ? (this.plinthDepth + ' ft') : 'to be discussed with client'}`,
+          `Count: ${this.plinthCount}`,
+          `Rate (per sqft): Rs. ${plinthRate}`,
+          `Base Sqft: ${plinthSqft}`,
+          `Total Cost: Rs. ${plinthTotal}`,
+          `Material: ${this.plinthMaterial}`
+        ]
+      });
+    }
+  // Super Structure (show one material set based on selected finishing type)
+  if (this.showSuperStructureInfo) {
+      const coreSqft = Number(this.coreHouseSqft) || 0;
+      const coreRate = Number(this.coreHouseSqftPrice) || 0;
+      const finishSqft = Number(this.finishingSqft) || 0;
+      const finishRate = Number(this.finishingPrice) || 0;
+      const brandedText = this.superStructureMaterial || '';
+      const nonBrandedText = this.superStructureMaterial2 || '';
+      const superItems: string[] = [
+        ...(this.finishingPriceType === 'nonbranded'
+          ? [`Non Branded Material: ${nonBrandedText}`]
+          : [`Branded Material: ${brandedText}`]
+        ),
+        `Total Base Part size in Sq ft: ${this.superStructureBaseSqft}`
+      ];
+      if (coreSqft > 0) {
+        const coreValue = coreRate > 0 ? `${coreSqft} Sq ft at Rs. ${coreRate} / Sq ft` : `${coreSqft} Sq ft`;
+        superItems.push(`Core House: ${coreValue}`);
+      }
+      if (finishSqft > 0) {
+        const finRateText = finishRate > 0 ? ` at Rs. ${finishRate} / Sq ft` : '';
+        const finTypeText = this.finishingPriceType ? ` (${this.finishingPriceType})` : '';
+        superItems.push(`Finishing: ${finishSqft} Sq ft${finRateText}${finTypeText}`);
+      }
+      const totalMain = (coreSqft * coreRate) + (finishSqft * finishRate);
+      superItems.push(`Total Cost: Rs. ${totalMain}`);
+      // Add a grouping heading first (renderer skips its table)
+      sections.push({ heading: 'Super Structure', items: superItems });
+      // Then add Ground Floor as its own detailed section so floors start from First/Second in PDF
+      sections.push({ heading: 'Ground Floor', items: superItems });
     }
 
-    // Heading centered, colored
-    doc.setFontSize(22);
-    doc.setTextColor(25, 118, 210); // Beautiful blue
-    doc.text((this.companyName ? this.companyName + ' Quotation' : 'Quotation'), pageWidth/2, y, { align: 'center' });
-    doc.setTextColor(0,0,0); // Reset to black
-    y += 18;
+    // Per-floor detailed tables (always render if floors exist)
+    const floorName = (idx: number) => {
+      // Floors list in UI starts from 1st Floor; index 0 => First, 1 => Second, etc.
+      const names = ['First Floor', 'Second Floor', 'Third Floor', 'Fourth Floor', 'Fifth Floor'];
+      return names[idx] || `Floor ${idx + 1}`;
+    };
+    if (this.floors && this.floors.length > 0) {
+      this.floors.forEach((f, i) => {
+        const coreSqft = Number(f.coreHouseSqft) || 0;
+        const coreRate = Number(f.coreHouseSqftPrice) || 0;
+        const finishSqft = Number(f.finishingSqft) || 0;
+        const finishRate = Number(f.finishingPrice) || 0;
+        const coreCost = coreSqft * coreRate;
+        const finishCost = finishSqft * finishRate;
+        const total = coreCost + finishCost;
 
-    // Company Info
-    doc.setFontSize(16);
-    doc.text('Company Info', 20, y);
-    y += 10;
-    doc.setFontSize(12);
-    doc.text('Name: ' + (this.companyName || ''), 20, y);
-    y += 8;
-    doc.text('Address: ' + (this.companyAddress || ''), 20, y);
-    y += 8;
-    doc.text('Mobile: ' + (this.companyMobile || ''), 20, y);
-    y += 12;
+        const brandedText = f.brandedMaterial || this.superStructureMaterial;
+        const nonBrandedText = f.nonBrandedMaterial || this.superStructureMaterial2;
 
-    // Client Info
-    doc.setFontSize(16);
-    doc.text('Client Info', 20, y);
-    y += 10;
-    doc.setFontSize(12);
-    doc.text('Name: ' + (this.clientPrefix || '') + ' ' + (this.clientName || ''), 20, y);
-    y += 8;
-    doc.text('Email: ' + (this.clientEmail || ''), 20, y);
-    y += 8;
-    doc.text('Contact: ' + (this.clientContact || ''), 20, y);
-    y += 8;
-    doc.text('Location: ' + (this.clientLocation || ''), 20, y);
-    y += 12;
+        const floorItems: string[] = [
+          ...(f.finishingPriceType === 'nonbranded'
+            ? [`Non Branded Material: ${nonBrandedText}`]
+            : [`Branded Material: ${brandedText}`]
+          ),
+          `Total Base Part size in Sq ft: ${f.baseSqft}`
+        ];
 
-    // Add more sections as needed
-    doc.save('quotation.pdf');
+        // Core house details only if size > 0, combine size and rate on single line
+        if (coreSqft > 0) {
+          const coreValue = coreRate > 0 ? `${coreSqft} Sq ft at Rs. ${coreRate} / Sq ft` : `${coreSqft} Sq ft`;
+          floorItems.push(`Core House: ${coreValue}`);
+        }
+
+        // Finishing details only if size > 0, combine size and rate on single line
+        if (finishSqft > 0) {
+          const finRateText = finishRate > 0 ? ` at Rs. ${finishRate} / Sq ft` : '';
+          const finTypeText = f.finishingPriceType ? ` (${f.finishingPriceType})` : '';
+          floorItems.push(`Finishing: ${finishSqft} Sq ft${finRateText}${finTypeText}`);
+        }
+
+        floorItems.push(`Total Cost: Rs. ${total}`);
+        sections.push({ heading: floorName(i), items: floorItems });
+      });
+    }
+    // Bore Well Costing
+    if (this.showBoreWellCosting) {
+  const boreItems = this.boreWellItems.map(b => `${b.description}: Qty ${b.quantity}, Rate Rs.${b.rate}`);
+      sections.push({ heading: 'Bore Well Costing', items: boreItems });
+    }
+
+    // Cost Breakdown section for clarity
+    sections.push({
+      heading: 'Cost Breakdown',
+      items: [
+        `Pilling: Rs. ${pillingCost}`,
+        `Plinth/Foundation: Rs. ${plinthTotal}`,
+        `Super Structure: Rs. ${superStructureCost}`,
+        `Bore Well: Rs. ${boreWellCost}`,
+        `Extra Work: Rs. ${extraWorkCost}`
+      ]
+    });
+
+    // Append Payment Structure and Extra Work at the bottom of the PDF (conditionally include by relevance)
+    const coreHousePayments = this.paymentScheduleCoreHouse.map(s => `${s.label}: ${s.value}%`);
+    const buildingWorkPayments = this.paymentScheduleBuildingWork.map(s => `${s.label}: ${s.value}%`);
+    const plinthWorkPayments = this.paymentSchedulePlinthWork.map(s => `${s.label}: ${s.value}%`);
+    const pilingPayments = this.paymentSchedulePiling.map(s => `${s.label}: ${s.value}%`);
+    // Only include Core House schedule if any core house sqft is selected (main or any floor)
+    const hasAnyCoreHouse = (Number(this.coreHouseSqft) || 0) > 0 || (this.floors || []).some(f => (Number(f.coreHouseSqft) || 0) > 0);
+    if (coreHousePayments.length && hasAnyCoreHouse) {
+      sections.push({ heading: 'Payment Schedule - Core House', items: coreHousePayments });
+    }
+    if (buildingWorkPayments.length) sections.push({ heading: 'Payment Schedule - Building Work', items: buildingWorkPayments });
+    if (plinthWorkPayments.length) sections.push({ heading: 'Payment Schedule - Plinth Work', items: plinthWorkPayments });
+    // Only include Piling payment schedule if pilling is required
+    if (pilingPayments.length && this.isPillingRequired) {
+      sections.push({ heading: 'Payment Schedule - Piling', items: pilingPayments });
+    }
+
+    if (this.extraWorkItems && this.extraWorkItems.length) {
+      const extraItems = this.extraWorkItems.map(e => `${e.description}${e.amount ? ' - Rs. ' + e.amount : ''}${e.remarks ? ' (' + e.remarks + ')' : ''}`);
+      sections.push({ heading: 'Extra Work (Not Included in payment structure, To be discussed With Client)', items: extraItems });
+    }
+
+    // Use injected PdfGeneratorService
+    this.pdfGeneratorService.generateQuotationPDF({
+      companyName: this.companyName,
+      companyAddress: this.companyAddress,
+      companyMobile: this.companyMobile,
+      clientPrefix: this.clientPrefix,
+      clientName: this.clientName,
+      clientEmail: this.clientEmail,
+      clientContact: this.clientContact,
+      clientLocation: this.clientLocation,
+  logoUrl: this.logoUrl ?? undefined,
+      sections,
+      totalCost: this.calculateTotalProjectCost(),
+      // Let floors flow naturally onto pages (no forced break before First Floor) but
+      // keep the option available for future. For compactness we leave it off here.
+      options: {
+        newPageBeforeFloorSections: false
+      }
+    });
   }
   showQuotationSummary: boolean = false;
 
   calculateTotalProjectCost(): number {
-    // Example calculation, update as needed
-    let total = 0;
-    // Add up costs from plinth, super structure, floors, bore well, extra work, etc.
-    // This is a placeholder, replace with your actual logic
-    return total;
+    // Pilling
+    const pillingCost = (this.isPillingRequired ? (Number(this.pileDepth) || 0) * (Number(this.pileCount) || 0) * (Number(this.pilePrice) || 0) : 0);
+
+    // Plinth / Foundation
+    const plinthSqft = Number(this.plinthBaseSqft) || 0;
+    const plinthRate = Number(this.plinthSqftPrice) || 0; // default 650 per sq ft
+    const plinthCost = plinthSqft * plinthRate;
+
+    // Super Structure / Floors
+    // Super Structure total: Ground (main section) + all dynamic floors
+    const mainCoreSqft2 = Number(this.coreHouseSqft) || 0;
+    const mainCoreRate2 = Number(this.coreHouseSqftPrice) || 0;
+    const mainFinishSqft2 = Number(this.finishingSqft) || 0;
+    const mainFinishRate2 = Number(this.finishingPrice) || 0;
+    const mainSuperCost2 = (mainCoreSqft2 * mainCoreRate2) + (mainFinishSqft2 * mainFinishRate2);
+
+    let floorsSuperCost2 = 0;
+    if (this.floors && this.floors.length > 0) {
+      for (const f of this.floors) {
+        const coreSqft = Number(f.coreHouseSqft) || 0;
+        const coreRate = Number(f.coreHouseSqftPrice) || 0;
+        const finishSqft = Number(f.finishingSqft) || 0;
+        const finishRate = Number(f.finishingPrice) || 0;
+        floorsSuperCost2 += coreSqft * coreRate + finishSqft * finishRate;
+      }
+    }
+    const superStructureCost = mainSuperCost2 + floorsSuperCost2;
+
+    // Bore Well
+    const includeBoreWell = this.isBoreWellRequired || this.showBoreWellCosting;
+    const boreWellCost = includeBoreWell ? (this.boreWellItems || []).reduce((sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.rate) || 0), 0) : 0;
+
+    // Extra Work
+    const extraWorkCost = (this.extraWorkItems || []).reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+
+    const total = pillingCost + plinthCost + superStructureCost + boreWellCost + extraWorkCost;
+    return Math.max(0, Math.round(total));
   }
 
   deleteFloor(index: number): void {
@@ -131,7 +307,7 @@ export class AppComponent implements OnInit {
     { description: 'Underground Sump / Water Tank' },
     { description: 'Boundary Wall & Main Gate' },
     { description: 'External Flooring' },
-    { description: 'Septic Tank / Soak Pit' }
+    { description: 'Septic Tank / Soak Pit/ Parapit/ Gridding /Headroom' }
   ];
   isBoreWellRequired: boolean = false;
 
@@ -319,26 +495,48 @@ export class AppComponent implements OnInit {
 
     onFloorCoreHouseSqftChange(index: number, value: number) {
       const floor = this.floors[index];
-      floor.coreHouseSqft = Number(value) || 0;
-      floor.finishingSqft = floor.baseSqft - floor.coreHouseSqft;
-      if (floor.finishingSqft < 0) floor.finishingSqft = 0;
+      if (!floor) return;
+      const base = Number(floor.baseSqft) || 0;
+      floor.coreHouseSqft = Math.max(0, Math.min(Number(value) || 0, base));
+      floor.finishingSqft = Math.max(0, base - floor.coreHouseSqft);
+    }
+
+    onFloorBaseSqftChange(index: number, value: number) {
+      const floor = this.floors[index];
+      if (!floor) return;
+      floor.baseSqft = Number(value) || 0;
+      const base = floor.baseSqft;
+      floor.coreHouseSqft = Math.max(0, Math.min(Number(floor.coreHouseSqft) || 0, base));
+      floor.finishingSqft = Math.max(0, base - floor.coreHouseSqft);
+    }
+
+    enforceFloorBounds(index: number) {
+      const floor = this.floors[index];
+      if (!floor) return;
+      const base = Number(floor.baseSqft) || 0;
+      floor.coreHouseSqft = Math.max(0, Math.min(Number(floor.coreHouseSqft) || 0, base));
+      floor.finishingSqft = Math.max(0, base - (Number(floor.coreHouseSqft) || 0));
     }
 
   onSuperStructureBaseSqftChange(value: number) {
     this.superStructureBaseSqft = Number(value) || 0;
-    // If coreHouseSqft is 0 or not set, finishing = base
-    if (!this.coreHouseSqft) {
-      this.finishingSqft = this.superStructureBaseSqft;
-    } else {
-      this.finishingSqft = this.superStructureBaseSqft - this.coreHouseSqft;
-      if (this.finishingSqft < 0) this.finishingSqft = 0;
-    }
+    const base = this.superStructureBaseSqft || 0;
+    // Clamp core within [0, base] and recompute finishing so sum <= base
+    this.coreHouseSqft = Math.max(0, Math.min(Number(this.coreHouseSqft) || 0, base));
+    this.finishingSqft = Math.max(0, base - this.coreHouseSqft);
   }
 
   onCoreHouseSqftChange(value: number) {
-    this.coreHouseSqft = Number(value) || 0;
-    this.finishingSqft = (Number(this.superStructureBaseSqft) || 0) - this.coreHouseSqft;
-    if (this.finishingSqft < 0) this.finishingSqft = 0;
+    const base = Number(this.superStructureBaseSqft) || 0;
+    this.coreHouseSqft = Math.max(0, Math.min(Number(value) || 0, base));
+    this.finishingSqft = Math.max(0, base - this.coreHouseSqft);
+  }
+
+  // Ensure sum equals base on blur/tab for super structure inputs
+  enforceSuperStructureBounds() {
+    const base = Number(this.superStructureBaseSqft) || 0;
+    this.coreHouseSqft = Math.max(0, Math.min(Number(this.coreHouseSqft) || 0, base));
+    this.finishingSqft = Math.max(0, base - (this.coreHouseSqft || 0));
   }
 
   toggleSuperStructureInfo() {
