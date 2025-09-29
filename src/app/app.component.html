@@ -488,9 +488,22 @@
         <span class="arrow" [class.open]="showExtraWork">&#9660;</span>
       </button>
       <div class="company-details" *ngIf="showExtraWork">
+        <!-- Header row for description and cost -->
+        <div class="company-info-row" style="display:flex;align-items:center;gap:12px;font-weight:600;">
+          <span style="flex:2;">Description</span>
+          <span style="width:160px;">Cost (Rs.)</span>
+          <span style="width:90px;"></span>
+        </div>
         <div *ngFor="let item of extraWorkItems; let i = index" class="company-info-row" style="display:flex;align-items:center;gap:12px;">
-          <input type="text" class="company-input" [(ngModel)]="item.description" (ngModelChange)="onExtraWorkChanged()" placeholder="Extra Work Item" />
+          <input type="text" class="company-input" [(ngModel)]="item.description" (ngModelChange)="onExtraWorkChanged()" placeholder="Extra Work Item" style="flex:2;" />
+          <input type="number" class="company-input" [(ngModel)]="item.amount" (ngModelChange)="onExtraWorkChanged()" placeholder="0" style="width:160px;" />
           <button type="button" (click)="deleteExtraWorkItem(i)" style="background:#e53935;color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;">Delete</button>
+        </div>
+        <!-- Grand total row -->
+        <div class="company-info-row" style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+          <span style="flex:2;font-weight:700;">Total Cost</span>
+          <input type="number" class="company-input" [value]="grandTotalExtraWork" readonly style="width:160px;font-weight:700;" />
+          <span style="width:90px;"></span>
         </div>
         <div style="display:flex;justify-content:center;margin:16px 0;">
           <button type="button" (click)="addExtraWorkItem()" style="font-size:20px;padding:6px 18px;border-radius:50%;background:#1976d2;color:#fff;border:none;box-shadow:0 2px 8px #ccc;cursor:pointer;">+</button>

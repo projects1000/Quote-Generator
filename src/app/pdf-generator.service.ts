@@ -88,6 +88,16 @@ export class PdfGeneratorService {
   // Render all sections in tabular format
     for (const section of data.sections) {
       const headingLower = section.heading.toLowerCase();
+      // Normalize display headings for consistency
+      let displayHeading = section.heading;
+      if (headingLower.includes('payment schedule')) {
+        if (headingLower.includes('building')) displayHeading = 'Payment Schedule - Building Structure';
+        else if (headingLower.includes('plinth')) displayHeading = 'Payment Schedule - Plinth Work';
+        else if (headingLower.includes('piling') || headingLower.includes('pilling')) displayHeading = 'Payment Schedule - Piling';
+        else displayHeading = 'Payment Schedule';
+      } else if (headingLower.includes('extra work')) {
+        displayHeading = 'Extra Work : Not included in Payment Structure (To be discussed With Client)';
+      }
       // Optional: force a page break before certain sections for better visual grouping
       if (data.options?.newPageBeforeFloorSections && headingLower.includes('floor')) {
         doc.addPage();
@@ -99,13 +109,22 @@ export class PdfGeneratorService {
           y = 20;
         }
       }
-      // Ensure there's room for the section heading; if not, start a new page
-      ensurePage(18);
-      doc.setFontSize(15);
-      doc.setTextColor(25, 118, 210);
-      doc.text(section.heading, 20, y);
+  // Ensure heading and the first table header fit on the same page (so they don't split across pages)
+  const headingHApprox = 12; // approx heading height
+  let firstHeaderH = 8; // default for generic table header
+  if (headingLower.includes('pilling') || headingLower.includes('piling')) firstHeaderH = 10;
+  else if (headingLower.includes('plinth') || headingLower.includes('foundation') || headingLower.includes('cost breakdown') || headingLower.includes('floor')) firstHeaderH = 10;
+  else if (headingLower.includes('payment')) firstHeaderH = 10;
+  else if (headingLower.includes('extra work')) firstHeaderH = 10;
+  else if (headingLower.includes('bore well')) firstHeaderH = 10;
+  const needSpace = headingLower.includes('super structure') ? headingHApprox : (headingHApprox + 3 + firstHeaderH);
+  ensurePage(needSpace);
+    doc.setFontSize(15);
+    doc.setTextColor(25, 118, 210);
+    doc.text(displayHeading, 20, y);
       doc.setTextColor(60, 60, 60);
-      y += 8;
+  // tighter gap between heading and table
+  y += 3;
       doc.setFontSize(12);
       const heading = headingLower;
 
@@ -122,7 +141,7 @@ export class PdfGeneratorService {
         const tableWidth = pageWidth - 40;
         const col1Width = Math.floor(tableWidth * 0.45);
         const col2Width = tableWidth - col1Width;
-        const rowHeight = 10;
+  const rowHeight = 10;
 
         // Header row
         doc.setFillColor(230, 240, 255);
@@ -156,14 +175,18 @@ export class PdfGeneratorService {
           doc.rect(tableX + col1Width, y, col2Width, cellHeight);
 
           // Write text with wrapping
+          const makeBold = /^total\s*cost$/i.test(String(key).trim());
+          if (makeBold) doc.setFont('helvetica', 'bold');
           for (let i = 0; i < neededRows; i++) {
             const ky = y + 7 + i * 8;
             if (keyLines[i]) doc.text(keyLines[i], tableX + 2, ky);
             if (valueLines[i]) doc.text(valueLines[i], tableX + col1Width + 2, ky);
           }
+          if (makeBold) doc.setFont('helvetica', 'normal');
           y += cellHeight;
         }
-        y += 6;
+        // gap after table before next heading
+        y += 10;
         continue; // skip generic renderer for this section
       }
 
@@ -173,7 +196,7 @@ export class PdfGeneratorService {
         const tableWidth = pageWidth - 40;
         const col1Width = Math.floor(tableWidth * 0.45);
         const col2Width = tableWidth - col1Width;
-        const rowHeaderH = 10;
+  const rowHeaderH = 10;
         doc.setFillColor(230, 240, 255);
         ensurePage(rowHeaderH);
         doc.rect(tableX, y, tableWidth, rowHeaderH, 'F');
@@ -182,11 +205,19 @@ export class PdfGeneratorService {
         doc.text('Value', tableX + col1Width + 2, y + 7);
         y += rowHeaderH;
 
-        const rows = section.items.map((s) => {
+        let rows = section.items.map((s) => {
           const idx = s.indexOf(':');
           if (idx > -1) return [s.slice(0, idx).trim(), s.slice(idx + 1).trim()];
           return [s, ''];
         });
+        // Ensure 'Material Information' is first row for Plinth/Foundation tables if present
+        if (heading.includes('plinth') || heading.includes('foundation')) {
+          const miIndex = rows.findIndex(([k]) => /^material\s*information$/i.test(String(k)));
+          if (miIndex > 0) {
+            const [mi] = rows.splice(miIndex, 1);
+            rows.unshift(mi);
+          }
+        }
 
         for (const [key, value] of rows) {
           const keyLines = doc.splitTextToSize(key, col1Width - 4);
@@ -196,49 +227,54 @@ export class PdfGeneratorService {
           ensurePage(cellHeight);
           doc.rect(tableX, y, col1Width, cellHeight);
           doc.rect(tableX + col1Width, y, col2Width, cellHeight);
+          const makeBold = /^total\s*cost$/i.test(String(key).trim());
+          if (makeBold) doc.setFont('helvetica', 'bold');
           for (let i = 0; i < neededRows; i++) {
             const ky = y + 7 + i * 8;
             if (keyLines[i]) doc.text(keyLines[i], tableX + 2, ky);
             if (valueLines[i]) doc.text(valueLines[i], tableX + col1Width + 2, ky);
           }
+          if (makeBold) doc.setFont('helvetica', 'normal');
           y += cellHeight;
         }
-        y += 6;
-
-        // If this is the Cost Breakdown section, place the Total Project Cost summary right below it
+        // If this is the Cost Breakdown section, append a bold total row inside the same table
         if (heading.includes('cost breakdown') && data.totalCost !== undefined) {
-          // Ensure there's enough space for title + row (~26px)
-          ensurePage(26);
-          doc.setFontSize(15);
-          doc.setTextColor(25, 118, 210);
-          doc.text('Total Project Cost', 20, y);
-          y += 8;
-          doc.setFontSize(13);
-          doc.setFillColor(230, 240, 255);
-          doc.rect(20, y, pageWidth - 40, 10, 'F');
-          doc.setTextColor(0, 0, 0);
-          doc.text('Grand Total', 22, y + 7);
-          doc.text('Rs. ' + data.totalCost.toLocaleString(), pageWidth - 60, y + 7);
-          y += 16;
+          const totalLabel = 'Total Project Cost';
+          const totalAmount = 'Rs. ' + data.totalCost.toLocaleString();
+          const totalRowH = 10;
+          ensurePage(totalRowH);
+          // Draw row borders
+          doc.rect(tableX, y, col1Width, totalRowH);
+          doc.rect(tableX + col1Width, y, col2Width, totalRowH);
+          // Bold text for total row
+          doc.setFont('helvetica', 'bold');
+          doc.text(totalLabel, tableX + 2, y + 7);
+          // Left align amount within the value cell
+          doc.text(totalAmount, tableX + col1Width + 2, y + 7);
+          // Reset font style
+          doc.setFont('helvetica', 'normal');
+          y += totalRowH;
           renderedTotalSummary = true;
         }
+        // gap after table before next heading
+        y += 10;
         continue;
       }
 
-      // Payment Structure: two columns Stage / %
-      if (heading.includes('payment')) {
+  // Payment Structure: two columns Stage / %
+  if (heading.includes('payment schedule')) {
         const tableX = 20;
         const tableWidth = pageWidth - 40;
         const col1Width = Math.floor(tableWidth * 0.75);
         const col2Width = tableWidth - col1Width;
-        const rowHeaderH = 10;
+  const rowHeaderH = 10;
         doc.setFillColor(230, 240, 255);
         ensurePage(rowHeaderH);
         doc.rect(tableX, y, tableWidth, rowHeaderH, 'F');
         doc.setTextColor(0, 0, 0);
         doc.text('Stage', tableX + 2, y + 7);
         doc.text('%', tableX + col1Width + 2, y + 7);
-        y += rowHeaderH;
+  y += rowHeaderH;
 
         for (const it of section.items) {
           const m = it.match(/^(.*?):\s*(\d+(?:\.\d+)?)%/);
@@ -256,32 +292,36 @@ export class PdfGeneratorService {
           }
           y += cellHeight;
         }
-        y += 6;
+        // gap after table before next heading
+        y += 10;
         continue;
       }
 
-      // Extra Work: Description / Amount / Remarks
+      // Extra Work: Description / Cost (Rs.) / Remarks
       if (heading.includes('extra work')) {
         const tableX = 20;
         const tableWidth = pageWidth - 40;
         const colDesc = Math.floor(tableWidth * 0.55);
         const colAmt = Math.floor(tableWidth * 0.2);
         const colRem = tableWidth - colDesc - colAmt;
-        const rowHeaderH = 10;
+  const rowHeaderH = 10;
         doc.setFillColor(230, 240, 255);
         ensurePage(rowHeaderH);
         doc.rect(tableX, y, tableWidth, rowHeaderH, 'F');
         doc.setTextColor(0, 0, 0);
         doc.text('Description', tableX + 2, y + 7);
-        doc.text('Amount', tableX + colDesc + 2, y + 7);
+  doc.text('Rs.', tableX + colDesc + 2, y + 7);
         doc.text('Remarks', tableX + colDesc + colAmt + 2, y + 7);
-        y += rowHeaderH;
+  y += rowHeaderH;
 
+        let extraSum = 0;
         for (const it of section.items) {
           const m = it.match(/^(.+?)(?:\s*-\s*Rs\.\s*([\d,]+(?:\.\d+)?))?(?:\s*\((.*?)\))?$/);
           const desc = m ? m[1].trim() : it;
-          const amt = m && m[2] ? `Rs. ${m[2]}` : '';
+          const amtNum = m && m[2] ? Number(m[2].replace(/,/g, '')) : 0;
+          const amt = `Rs. ${amtNum.toLocaleString()}`;
           const rem = m && m[3] ? m[3] : '';
+          extraSum += (amtNum || 0);
           const descLines = doc.splitTextToSize(desc, colDesc - 4);
           const remLines = doc.splitTextToSize(rem, colRem - 4);
           const neededRows = Math.max(descLines.length, Math.max(1, remLines.length));
@@ -293,12 +333,24 @@ export class PdfGeneratorService {
           for (let i = 0; i < neededRows; i++) {
             const ky = y + 7 + i * 8;
             if (descLines[i]) doc.text(descLines[i], tableX + 2, ky);
-            if (i === 0 && amt) doc.text(amt, tableX + colDesc + 2, ky);
+            if (i === 0) doc.text(amt, tableX + colDesc + 2, ky);
             if (remLines[i]) doc.text(remLines[i], tableX + colDesc + colAmt + 2, ky);
           }
           y += cellHeight;
         }
-        y += 6;
+        // Append total row for extra work
+        const totalRowH = 10;
+        ensurePage(totalRowH);
+        doc.rect(tableX, y, colDesc, totalRowH);
+        doc.rect(tableX + colDesc, y, colAmt, totalRowH);
+        doc.rect(tableX + colDesc + colAmt, y, colRem, totalRowH);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Total Cost', tableX + 2, y + 7);
+        doc.text(`Rs. ${extraSum.toLocaleString()}`, tableX + colDesc + 2, y + 7);
+        doc.setFont('helvetica', 'normal');
+        y += totalRowH;
+        // gap after table before next heading
+        y += 10;
         continue;
       }
 
@@ -344,7 +396,8 @@ export class PdfGeneratorService {
           }
           y += cellHeight;
         }
-        y += 6;
+        // gap after table before next heading
+        y += 10;
         continue;
       }
 
@@ -353,11 +406,11 @@ export class PdfGeneratorService {
       const detailsColX = 22;
       const detailsColWidth = Math.floor((pageWidth - 40) * 0.65);
       const amountColX = detailsColX + detailsColWidth + 4;
-      ensurePage(8);
+  ensurePage(8);
       doc.rect(20, y, pageWidth - 40, 8, 'F');
       doc.text('Details', detailsColX, y + 6);
       doc.text('Amount', amountColX, y + 6);
-      y += 10;
+  y += 8;
       for (const item of section.items) {
         let detail = item;
         let amount = '';
@@ -367,6 +420,8 @@ export class PdfGeneratorService {
           amount = match[3] ? `Rs. ${match[3]}` : '';
         }
         const detailLines = doc.splitTextToSize(detail, detailsColWidth);
+        const makeBold = /^total\s*cost$/i.test(detail.trim());
+        if (makeBold) doc.setFont('helvetica', 'bold');
         for (let i = 0; i < detailLines.length; i++) {
           ensurePage(8);
           doc.text(detailLines[i], detailsColX, y);
@@ -375,23 +430,12 @@ export class PdfGeneratorService {
           }
           y += 8;
         }
+        if (makeBold) doc.setFont('helvetica', 'normal');
       }
-      y += 6;
+      // gap after table before next heading
+      y += 10;
     }
-    // Fallback: if Total wasn't rendered (e.g., Cost Breakdown missing), render at the end
-    if (!renderedTotalSummary && data.totalCost !== undefined) {
-      doc.setFontSize(15);
-      doc.setTextColor(25, 118, 210);
-      doc.text('Total Project Cost', 20, y);
-      y += 8;
-      doc.setFontSize(13);
-      doc.setFillColor(230, 240, 255);
-      doc.rect(20, y, pageWidth - 40, 10, 'F');
-      doc.setTextColor(0, 0, 0);
-      doc.text('Grand Total', 22, y + 7);
-      doc.text('Rs. ' + data.totalCost.toLocaleString(), pageWidth - 60, y + 7);
-      y += 16;
-    }
+    // Fallback: If total wasn't rendered and needed, we could add here, but requirement is to keep it inside Cost Breakdown table only.
 
   // Always render Note* block near the bottom of the final page
   // Content requested by user, in brown color
